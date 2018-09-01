@@ -14,6 +14,11 @@
 
 enum class OpCode: uint8_t {
     CONSTANT,
+    ADD,
+    SUBTRACT,
+    MULTIPLY,
+    DIVIDE,
+    NEGATE,
     RETURN,
 };
 
@@ -21,8 +26,6 @@ class Chunk {
     std::vector<uint8_t> code;
     std::vector<Value> constants;
     std::vector<int> lines;
-    
-    int disassembleInstruction(int offset);
 
 public:
     Chunk();
@@ -31,6 +34,7 @@ public:
     void write(uint8_t byte, int line);
     void write(OpCode opcode, int line);
     unsigned long addConstant(Value value);
+    int disassembleInstruction(int offset);
     void disassemble(const std::string name);
 };
 

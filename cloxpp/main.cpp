@@ -8,6 +8,7 @@
 
 #include "common.hpp"
 #include "chunk.hpp"
+#include "vm.hpp"
 
 int main(int argc, const char * argv[]) {
     auto c = Chunk();
@@ -15,7 +16,24 @@ int main(int argc, const char * argv[]) {
     auto constant = c.addConstant(1.2);
     c.write(OpCode::CONSTANT, 123);
     c.write(constant, 123);
+    
+    constant = c.addConstant(3.4);
+    c.write(OpCode::CONSTANT, 123);
+    c.write(constant, 123);
+    
+    c.write(OpCode::ADD, 123);
+    
+    constant = c.addConstant(5.6);
+    c.write(OpCode::CONSTANT, 123);
+    c.write(constant, 123);
+    
+    c.write(OpCode::DIVIDE, 123);
+    c.write(OpCode::NEGATE, 123);
+    
     c.write(OpCode::RETURN, 123);
-    c.disassemble("test chunk");
+    
+    auto vm = VM(c);
+    vm.interpret();
+    
     return 0;
 }

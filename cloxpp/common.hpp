@@ -12,4 +12,6 @@
 #include <iostream>
 #include <vector>
 
+#define DEBUG_TRACE_EXECUTION
+
 #endif /* common_h */
