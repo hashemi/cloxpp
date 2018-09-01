@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		EEC564BC213691680020CAA0 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EEC564BB213691680020CAA0 /* main.cpp */; };
+		EEC564C6213694D50020CAA0 /* chunk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EEC564C4213694D50020CAA0 /* chunk.cpp */; };
+		EEC564CC213A511C0020CAA0 /* value.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EEC564CA213A511C0020CAA0 /* value.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +27,11 @@
 /* Begin PBXFileReference section */
 		EEC564B8213691680020CAA0 /* cloxpp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cloxpp; sourceTree = BUILT_PRODUCTS_DIR; };
 		EEC564BB213691680020CAA0 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		EEC564C2213692730020CAA0 /* common.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = common.hpp; sourceTree = "<group>"; };
+		EEC564C4213694D50020CAA0 /* chunk.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = chunk.cpp; sourceTree = "<group>"; };
+		EEC564C5213694D50020CAA0 /* chunk.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = chunk.hpp; sourceTree = "<group>"; };
+		EEC564CA213A511C0020CAA0 /* value.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = value.cpp; sourceTree = "<group>"; };
+		EEC564CB213A511C0020CAA0 /* value.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = value.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +65,11 @@
 			isa = PBXGroup;
 			children = (
 				EEC564BB213691680020CAA0 /* main.cpp */,
+				EEC564C2213692730020CAA0 /* common.hpp */,
+				EEC564C4213694D50020CAA0 /* chunk.cpp */,
+				EEC564C5213694D50020CAA0 /* chunk.hpp */,
+				EEC564CA213A511C0020CAA0 /* value.cpp */,
+				EEC564CB213A511C0020CAA0 /* value.hpp */,
 			);
 			path = cloxpp;
 			sourceTree = "<group>";
@@ -119,6 +131,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				EEC564BC213691680020CAA0 /* main.cpp in Sources */,
+				EEC564CC213A511C0020CAA0 /* value.cpp in Sources */,
+				EEC564C6213694D50020CAA0 /* chunk.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
