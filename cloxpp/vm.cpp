@@ -8,8 +8,15 @@
 
 #include "vm.hpp"
 
-InterpretResult VM::interpret() {
+InterpretResult VM::interpret(Chunk newChunk) {
+    chunk = newChunk;
+    ip = 0;
     return run();
+}
+
+InterpretResult VM::interpret(std::string source) {
+    compile(source);
+    return InterpretResult::OK;
 }
 
 InterpretResult VM::run() {
