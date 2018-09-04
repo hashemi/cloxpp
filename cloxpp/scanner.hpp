@@ -46,9 +46,9 @@ public:
     Token(TokenType type, std::string_view text, int line):
         _type(type), _text(text), _line(line) {};
     
-    TokenType type() { return _type; };
-    std::string_view text() { return _text; };
-    int line() { return _line; };
+    TokenType type() const { return _type; };
+    std::string_view text() const { return _text; };
+    int line() const { return _line; };
 };
 
 class Scanner {

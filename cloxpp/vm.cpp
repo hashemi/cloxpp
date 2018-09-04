@@ -15,8 +15,18 @@ InterpretResult VM::interpret(Chunk newChunk) {
 }
 
 InterpretResult VM::interpret(std::string source) {
-    compile(source);
-    return InterpretResult::OK;
+    // create a new chunk
+    auto newChunk = Chunk();
+    auto parser = Parser(source, newChunk);
+    
+    if (!parser.compile()) {
+        return InterpretResult::COMPILE_ERROR;
+    }
+    
+    chunk = newChunk;
+    ip = 0;
+    
+    return run();
 }
 
 InterpretResult VM::run() {
@@ -51,7 +61,6 @@ InterpretResult VM::run() {
             case OpCode::CONSTANT: {
                 auto constant = readConstant();
                 push(constant);
-                std::cout << constant << std::endl;
                 break;
             }
                 
