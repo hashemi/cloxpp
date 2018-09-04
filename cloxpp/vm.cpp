@@ -29,6 +29,32 @@ InterpretResult VM::interpret(std::string source) {
     return run();
 }
 
+void VM::runtimeError(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    std::cerr << std::endl;
+    
+    std::cerr << "[line " << chunk.getLine(ip) << "] in script" << std::endl;
+    resetStack();
+}
+
+bool VM::binaryOp(std::function<Value(double, double)> op) {
+    try {
+        auto b = mpark::get<double>(peek(0));
+        auto a = mpark::get<double>(peek(1));
+        
+        pop();
+        pop();
+        push(op(a, b));
+        return true;
+    } catch (mpark::bad_variant_access&) {
+        runtimeError("Operands must be numbers.");
+        return false;
+    }
+}
+
 InterpretResult VM::run() {
     auto readByte = [this]() -> uint8_t {
         return this->chunk.getCode(this->ip++);
@@ -51,9 +77,9 @@ InterpretResult VM::run() {
 
 #define BINARY_OP(op) \
     do { \
-        double b = pop(); \
-        double a = pop(); \
-        push(a op b); \
+        if (!binaryOp([](double a, double b) -> Value { return a op b; })) { \
+            return InterpretResult::RUNTIME_ERROR; \
+        } \
     } while (false)
         
         auto instruction = OpCode(readByte());
@@ -63,13 +89,36 @@ InterpretResult VM::run() {
                 push(constant);
                 break;
             }
+            case OpCode::NIL:   push(mpark::monostate()); break;
+            case OpCode::TRUE:  push(true); break;
+            case OpCode::FALSE: push(false); break;
+                
+            case OpCode::EQUAL: {
+                Value b = pop();
+                Value a = pop();
+                push(a == b);
+                break;
+            }
+                
+            case OpCode::GREATER:   BINARY_OP(>); break;
+            case OpCode::LESS:      BINARY_OP(<); break;
                 
             case OpCode::ADD:       BINARY_OP(+); break;
             case OpCode::SUBTRACT:  BINARY_OP(-); break;
             case OpCode::MULTIPLY:  BINARY_OP(*); break;
             case OpCode::DIVIDE:    BINARY_OP(/); break;
-                
-            case OpCode::NEGATE: push(-pop()); break;
+            case OpCode::NOT: push(isFalsy(pop())); break;
+            
+            case OpCode::NEGATE:
+                try {
+                    auto negated = -mpark::get<double>(peek(0));
+                    pop(); // if we get here it means it was good
+                    push(negated);
+                } catch (mpark::bad_variant_access&) {
+                    runtimeError("Operand must be a number.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
                 
             case OpCode::RETURN: {
                 std::cout << pop() << std::endl;

@@ -53,6 +53,7 @@ class Parser {
     void emit(uint8_t byte);
     void emit(OpCode op);
     void emit(OpCode op, uint8_t byte);
+    void emit(OpCode op1, OpCode op2);
     void emitReturn();
     uint8_t makeConstant(Value value);
     void emitConstant(Value value);
@@ -60,6 +61,7 @@ class Parser {
     void endCompiler();
     
     void binary();
+    void literal();
     void grouping();
     void number();
     void unary();

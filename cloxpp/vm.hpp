@@ -23,19 +23,18 @@ class VM {
     unsigned ip;
     std::vector<Value> stack;
     
-    inline void resetStack() {
-        stack.clear();
-    }
+    inline void resetStack() { stack.clear(); }
     
-    inline void push(Value v) {
-        stack.push_back(v);
-    }
+    void runtimeError(const char* format, ...);
+    bool binaryOp(std::function<Value(double,double)> op);
     
+    inline void push(Value v) { stack.push_back(v); }
     inline Value pop() {
         auto v = stack.back();
         stack.pop_back();
         return v;
     }
+    inline Value peek(int distance) { return stack[stack.size() - 1 - distance]; }
     
 public:
     VM(Chunk& c): chunk(c), ip(0), stack(std::vector<Value>()) {};

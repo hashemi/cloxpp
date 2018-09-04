@@ -58,6 +58,11 @@ void Parser::emit(OpCode op, uint8_t byte) {
     emit(byte);
 }
 
+void Parser::emit(OpCode op1, OpCode op2) {
+    emit(op1);
+    emit(op2);
+}
+
 void Parser::emitReturn() {
     emit(OpCode::RETURN);
 }
@@ -95,12 +100,27 @@ void Parser::binary() {
     parsePrecedence(Precedence(static_cast<int>(rule.precedence) + 1));
     
     // Emit the operator instruction.
-    // Emit the operator instruction.
     switch (operatorType) {
+        case TokenType::BANG_EQUAL:    emit(OpCode::EQUAL, OpCode::NOT); break;
+        case TokenType::EQUAL_EQUAL:   emit(OpCode::EQUAL); break;
+        case TokenType::GREATER:       emit(OpCode::GREATER); break;
+        case TokenType::GREATER_EQUAL: emit(OpCode::LESS, OpCode::NOT); break;
+        case TokenType::LESS:          emit(OpCode::LESS); break;
+        case TokenType::LESS_EQUAL:    emit(OpCode::GREATER, OpCode::NOT); break;
         case TokenType::PLUS:          emit(OpCode::ADD); break;
         case TokenType::MINUS:         emit(OpCode::SUBTRACT); break;
         case TokenType::STAR:          emit(OpCode::MULTIPLY); break;
         case TokenType::SLASH:         emit(OpCode::DIVIDE); break;
+        default:
+            return; // Unreachable.
+    }
+}
+
+void Parser::literal() {
+    switch (previous.type()) {
+        case TokenType::FALSE: emit(OpCode::FALSE); break;
+        case TokenType::NIL:   emit(OpCode::NIL); break;
+        case TokenType::TRUE:  emit(OpCode::TRUE); break;
         default:
             return; // Unreachable.
     }
@@ -124,6 +144,7 @@ void Parser::unary() {
     
     // Emit the operator instruciton.
     switch (operatorType) {
+        case TokenType::BANG: emit(OpCode::NOT); break;
         case TokenType::MINUS: emit(OpCode::NEGATE); break;
             
         default:
@@ -136,6 +157,7 @@ ParseRule& Parser::getRule(TokenType type) {
     auto unary = &Parser::unary;
     auto binary = &Parser::binary;
     auto number = &Parser::number;
+    auto literal = &Parser::literal;
     
     static ParseRule rules[] = {
         { grouping,    nullptr,    Precedence::CALL },       // TOKEN_LEFT_PAREN
@@ -149,31 +171,31 @@ ParseRule& Parser::getRule(TokenType type) {
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_SEMICOLON
         { nullptr,     binary,     Precedence::FACTOR },     // TOKEN_SLASH
         { nullptr,     binary,     Precedence::FACTOR },     // TOKEN_STAR
-        { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_BANG
-        { nullptr,     nullptr,    Precedence::EQUALITY },   // TOKEN_BANG_EQUAL
+        { unary,       nullptr,    Precedence::NONE },       // TOKEN_BANG
+        { nullptr,     binary,     Precedence::EQUALITY },   // TOKEN_BANG_EQUAL
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_EQUAL
-        { nullptr,     nullptr,    Precedence::EQUALITY },   // TOKEN_EQUAL_EQUAL
-        { nullptr,     nullptr,    Precedence::COMPARISON }, // TOKEN_GREATER
-        { nullptr,     nullptr,    Precedence::COMPARISON }, // TOKEN_GREATER_EQUAL
-        { nullptr,     nullptr,    Precedence::COMPARISON }, // TOKEN_LESS
-        { nullptr,     nullptr,    Precedence::COMPARISON }, // TOKEN_LESS_EQUAL
+        { nullptr,     binary,     Precedence::EQUALITY },   // TOKEN_EQUAL_EQUAL
+        { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_GREATER
+        { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_GREATER_EQUAL
+        { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_LESS
+        { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_LESS_EQUAL
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_IDENTIFIER
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_STRING
         { number,      nullptr,    Precedence::NONE },       // TOKEN_NUMBER
         { nullptr,     nullptr,    Precedence::AND },        // TOKEN_AND
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_CLASS
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_ELSE
-        { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_FALSE
+        { literal,     nullptr,    Precedence::NONE },       // TOKEN_FALSE
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_FUN
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_FOR
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_IF
-        { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_NIL
+        { literal,     nullptr,    Precedence::NONE },       // TOKEN_NIL
         { nullptr,     nullptr,    Precedence::OR },         // TOKEN_OR
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_PRINT
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_RETURN
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_SUPER
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_THIS
-        { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_TRUE
+        { literal,     nullptr,    Precedence::NONE },       // TOKEN_TRUE
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_VAR
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_WHILE
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_ERROR

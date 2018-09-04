@@ -14,10 +14,17 @@
 
 enum class OpCode: uint8_t {
     CONSTANT,
+    NIL,
+    TRUE,
+    FALSE,
+    EQUAL,
+    GREATER,
+    LESS,
     ADD,
     SUBTRACT,
     MULTIPLY,
     DIVIDE,
+    NOT,
     NEGATE,
     RETURN,
 };
@@ -36,6 +43,7 @@ public:
     unsigned long addConstant(Value value);
     int disassembleInstruction(int offset);
     void disassemble(const std::string name);
+    int getLine(int instruction) { return lines[instruction]; }
 };
 
 #endif /* chunk_hpp */
