@@ -17,8 +17,7 @@ using Value = mpark::variant<double, bool, mpark::monostate>;
 struct OutputVisitor {
     void operator()(const double d) const { std::cout << d; }
     void operator()(const bool b) const { std::cout << (b ? "true" : "false"); }
-    void operator()(const std::string& s) const { std::cout << s; }
-    void operator()(const mpark::monostate& n) const { std::cout << "nil"; }
+    void operator()(const mpark::monostate n) const { std::cout << "nil"; }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Value& v) {
@@ -29,8 +28,7 @@ inline std::ostream& operator<<(std::ostream& os, const Value& v) {
 struct FalsinessVisitor {
     bool operator()(const double d) const { return false; }
     bool operator()(const bool b) const { return !b; }
-    bool operator()(const std::string& s) const { return false; }
-    bool operator()(const mpark::monostate& n) const { return true; }
+    bool operator()(const mpark::monostate n) const { return true; }
 };
 
 inline bool isFalsy(const Value& v) {

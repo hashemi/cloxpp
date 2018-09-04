@@ -48,7 +48,7 @@ class Parser {
     Chunk& compilingChunk;
     
     void advance();
-    void consume(TokenType type, const std::string message);
+    void consume(TokenType type, const std::string& message);
     
     void emit(uint8_t byte);
     void emit(OpCode op);
@@ -73,19 +73,19 @@ class Parser {
         return compilingChunk;
     }
     
-    void errorAt(Token const& token, const std::string message);
+    void errorAt(const Token& token, const std::string& message);
     
-    void error(const std::string message) {
+    void error(const std::string& message) {
         errorAt(previous, message);
     };
     
-    void errorAtCurrent(const std::string message) {
+    void errorAtCurrent(const std::string& message) {
         errorAt(current, message);
     };
     
     
 public:
-    Parser(const std::string source, Chunk& chunk);
+    Parser(const std::string& source, Chunk& chunk);
     bool compile();
 };
 

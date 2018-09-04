@@ -64,7 +64,7 @@ class Scanner {
     bool match(char expected);
     
     Token makeToken(TokenType type);
-    Token errorToken(std::string message);
+    Token errorToken(const std::string& message);
     
     void skipWhitespace();
     TokenType checkKeyword(size_t pos, size_t len, std::string rest, TokenType type);

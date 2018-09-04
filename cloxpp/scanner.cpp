@@ -90,7 +90,7 @@ Token Scanner::makeToken(TokenType type) {
     return Token(type, text, line);
 }
 
-Token Scanner::errorToken(std::string message) {
+Token Scanner::errorToken(const std::string& message) {
     return Token(TokenType::ERROR, message, line);
 }
 

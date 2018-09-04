@@ -28,7 +28,7 @@ unsigned long Chunk::addConstant(Value value) {
     return constants.size() - 1;
 }
 
-void Chunk::disassemble(const std::string name) {
+void Chunk::disassemble(const std::string& name) {
     std::cout << "== " << name << " ==" << std::endl;
     
     for (int i = 0; i < code.size();) {
@@ -36,15 +36,15 @@ void Chunk::disassemble(const std::string name) {
     }
 }
 
-static int simpleInstruction(const std::string name, int offset) {
+static int simpleInstruction(const std::string& name, int offset) {
     std::cout << name << std::endl;
     return offset + 1;
 }
 
-static int constantInstruction(const std::string name, const Chunk* chunk, int offset) {
-    auto constant = chunk->getCode(offset + 1);
+static int constantInstruction(const std::string& name, const Chunk& chunk, int offset) {
+    auto constant = chunk.getCode(offset + 1);
     printf("%-16s %4d '", name.c_str(), constant);
-    std::cout << chunk->getConstant(constant);
+    std::cout << chunk.getConstant(constant);
     printf("'\n");
     return offset + 2;
 }
@@ -61,7 +61,7 @@ int Chunk::disassembleInstruction(int offset) {
     auto instruction = OpCode(code[offset]);
     switch (instruction) {
         case OpCode::CONSTANT:
-            return constantInstruction("OP_CONSTANT", this, offset);
+            return constantInstruction("OP_CONSTANT", *this, offset);
         case OpCode::NIL:
             return simpleInstruction("OP_NIL", offset);
         case OpCode::TRUE:

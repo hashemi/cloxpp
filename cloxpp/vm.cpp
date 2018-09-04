@@ -8,13 +8,7 @@
 
 #include "vm.hpp"
 
-InterpretResult VM::interpret(Chunk newChunk) {
-    chunk = newChunk;
-    ip = 0;
-    return run();
-}
-
-InterpretResult VM::interpret(std::string source) {
+InterpretResult VM::interpret(const std::string& source) {
     // create a new chunk
     auto newChunk = Chunk();
     auto parser = Parser(source, newChunk);

@@ -8,7 +8,7 @@
 
 #include "compiler.hpp"
 
-Parser::Parser(const std::string source, Chunk& chunk) :
+Parser::Parser(const std::string& source, Chunk& chunk) :
     previous(Token(TokenType::_EOF, source, 0)),
     current(Token(TokenType::_EOF, source, 0)),
     scanner(Scanner(source)),
@@ -36,7 +36,7 @@ void Parser::advance() {
     }
 }
 
-void Parser::consume(TokenType type, const std::string message) {
+void Parser::consume(TokenType type, const std::string& message) {
     if (current.type() == type) {
         advance();
         return;
@@ -226,7 +226,7 @@ void Parser::expression() {
     parsePrecedence(Precedence::ASSIGNMENT);
 }
 
-void Parser::errorAt(Token const& token, const std::string message) {
+void Parser::errorAt(const Token& token, const std::string& message) {
     if (panicMode) return;
     
     panicMode = true;

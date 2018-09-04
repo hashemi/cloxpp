@@ -26,7 +26,7 @@ static void repl(VM& vm) {
     }
 }
 
-static std::string readFile(const std::string path) {
+static std::string readFile(const std::string& path) {
     std::ifstream t(path);
     std::string str;
     
@@ -40,7 +40,7 @@ static std::string readFile(const std::string path) {
     return str;
 }
 
-static void runFile(VM& vm, const std::string path) {
+static void runFile(VM& vm, const std::string& path) {
     auto source = readFile(path);
     auto result = vm.interpret(source);
     

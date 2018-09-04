@@ -38,8 +38,7 @@ class VM {
     
 public:
     VM(Chunk& c): chunk(c), ip(0), stack(std::vector<Value>()) {};
-    InterpretResult interpret(std::string source);
-    InterpretResult interpret(Chunk chunk);
+    InterpretResult interpret(const std::string& source);
     InterpretResult run();
 };
 

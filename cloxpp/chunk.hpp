@@ -42,7 +42,7 @@ public:
     void write(OpCode opcode, int line);
     unsigned long addConstant(Value value);
     int disassembleInstruction(int offset);
-    void disassemble(const std::string name);
+    void disassemble(const std::string& name);
     int getLine(int instruction) { return lines[instruction]; }
 };
 
