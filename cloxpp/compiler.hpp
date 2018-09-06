@@ -32,8 +32,8 @@ class Parser;
 typedef void (Parser::*ParseFn)();
 
 struct ParseRule {
-    ParseFn prefix;
-    ParseFn infix;
+    std::function<void()> prefix;
+    std::function<void()> infix;
     Precedence precedence;
 };
 

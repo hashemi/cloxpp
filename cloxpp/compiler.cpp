@@ -153,11 +153,11 @@ void Parser::unary() {
 }
 
 ParseRule& Parser::getRule(TokenType type) {
-    auto grouping = &Parser::grouping;
-    auto unary = &Parser::unary;
-    auto binary = &Parser::binary;
-    auto number = &Parser::number;
-    auto literal = &Parser::literal;
+    auto grouping = [this]() { this->grouping(); };
+    auto unary = [this]() { this->unary(); };
+    auto binary = [this]() { this->binary(); };
+    auto number = [this]() { this->number(); };
+    auto literal = [this]() { this->literal(); };
     
     static ParseRule rules[] = {
         { grouping,    nullptr,    Precedence::CALL },       // TOKEN_LEFT_PAREN
@@ -213,12 +213,12 @@ void Parser::parsePrecedence(Precedence precedence) {
         return;
     }
     
-    (this->*prefixRule)();
+    prefixRule();
     
     while (precedence <= getRule(current.type()).precedence) {
         advance();
         auto infixRule = getRule(previous.type()).infix;
-        (this->*infixRule)();
+        infixRule();
     }
 }
 
