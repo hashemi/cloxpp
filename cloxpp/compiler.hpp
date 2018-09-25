@@ -64,6 +64,7 @@ class Parser {
     void literal();
     void grouping();
     void number();
+    void string();
     void unary();
     ParseRule& getRule(TokenType type);
     void parsePrecedence(Precedence precedence);

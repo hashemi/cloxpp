@@ -27,6 +27,7 @@ class VM {
     
     void runtimeError(const char* format, ...);
     bool binaryOp(std::function<Value(double,double)> op);
+    void popTwoAndPush(Value v);
     
     inline void push(Value v) { stack.push_back(v); }
     inline Value pop() {

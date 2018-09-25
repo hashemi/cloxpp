@@ -136,6 +136,13 @@ void Parser::number() {
     emitConstant(value);
 }
 
+void Parser::string() {
+    auto str = previous.text();
+    str.remove_prefix(1);
+    str.remove_suffix(1);
+    emitConstant(std::string(str));
+}
+
 void Parser::unary() {
     auto operatorType = previous.type();
     
@@ -157,6 +164,7 @@ ParseRule& Parser::getRule(TokenType type) {
     auto unary = [this]() { this->unary(); };
     auto binary = [this]() { this->binary(); };
     auto number = [this]() { this->number(); };
+    auto string = [this]() { this->string(); };
     auto literal = [this]() { this->literal(); };
     
     static ParseRule rules[] = {
@@ -180,7 +188,7 @@ ParseRule& Parser::getRule(TokenType type) {
         { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_LESS
         { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_LESS_EQUAL
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_IDENTIFIER
-        { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_STRING
+        { string,      nullptr,    Precedence::NONE },       // TOKEN_STRING
         { number,      nullptr,    Precedence::NONE },       // TOKEN_NUMBER
         { nullptr,     nullptr,    Precedence::AND },        // TOKEN_AND
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_CLASS

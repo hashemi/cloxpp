@@ -18,6 +18,7 @@ This port implements code from the following chapters of Part III of the book:
 16. Scanning on Demand.
 17. Compiling Expressions.
 18. Types of Values.
+19. Strings.
 
 ## Goals & Design
 My goal in this project is to become more proficient in C++.

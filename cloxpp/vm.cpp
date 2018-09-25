@@ -39,14 +39,21 @@ bool VM::binaryOp(std::function<Value(double, double)> op) {
         auto b = mpark::get<double>(peek(0));
         auto a = mpark::get<double>(peek(1));
         
-        pop();
-        pop();
-        push(op(a, b));
+        popTwoAndPush(op(a, b));
         return true;
     } catch (mpark::bad_variant_access&) {
         runtimeError("Operands must be numbers.");
         return false;
     }
+}
+
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+void VM::popTwoAndPush(Value v) {
+    pop();
+    pop();
+    push(v);
 }
 
 InterpretResult VM::run() {
@@ -88,16 +95,35 @@ InterpretResult VM::run() {
             case OpCode::FALSE: push(false); break;
                 
             case OpCode::EQUAL: {
-                Value b = pop();
-                Value a = pop();
-                push(a == b);
+                popTwoAndPush(peek(0) == peek(1));
                 break;
             }
                 
             case OpCode::GREATER:   BINARY_OP(>); break;
             case OpCode::LESS:      BINARY_OP(<); break;
                 
-            case OpCode::ADD:       BINARY_OP(+); break;
+            case OpCode::ADD: {
+                auto success = mpark::visit(overloaded {
+                    [this](double b, double a) -> bool {
+                        this->popTwoAndPush(a + b);
+                        return true;
+                    },
+                    [this](std::string b, std::string a) -> bool {
+                        this->popTwoAndPush(a + b);
+                        return true;
+                    },
+                    [this](auto a, auto b) -> bool {
+                        this->runtimeError("Operands must be two numbers or two strings.");
+                        return false;
+                    }
+                }, peek(0), peek(1));
+                
+                if (!success)
+                    return InterpretResult::RUNTIME_ERROR;
+                
+                break;
+            }
+                
             case OpCode::SUBTRACT:  BINARY_OP(-); break;
             case OpCode::MULTIPLY:  BINARY_OP(*); break;
             case OpCode::DIVIDE:    BINARY_OP(/); break;
