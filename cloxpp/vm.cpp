@@ -36,12 +36,12 @@ void VM::runtimeError(const char* format, ...) {
 
 bool VM::binaryOp(std::function<Value(double, double)> op) {
     try {
-        auto b = mpark::get<double>(peek(0));
-        auto a = mpark::get<double>(peek(1));
+        auto b = std::get<double>(peek(0));
+        auto a = std::get<double>(peek(1));
         
         popTwoAndPush(op(a, b));
         return true;
-    } catch (mpark::bad_variant_access&) {
+    } catch (std::bad_variant_access&) {
         runtimeError("Operands must be numbers.");
         return false;
     }
@@ -90,7 +90,7 @@ InterpretResult VM::run() {
                 push(constant);
                 break;
             }
-            case OpCode::NIL:   push(mpark::monostate()); break;
+            case OpCode::NIL:   push(std::monostate()); break;
             case OpCode::TRUE:  push(true); break;
             case OpCode::FALSE: push(false); break;
                 
@@ -103,7 +103,7 @@ InterpretResult VM::run() {
             case OpCode::LESS:      BINARY_OP(<); break;
                 
             case OpCode::ADD: {
-                auto success = mpark::visit(overloaded {
+                auto success = std::visit(overloaded {
                     [this](double b, double a) -> bool {
                         this->popTwoAndPush(a + b);
                         return true;
@@ -131,10 +131,10 @@ InterpretResult VM::run() {
             
             case OpCode::NEGATE:
                 try {
-                    auto negated = -mpark::get<double>(peek(0));
+                    auto negated = -std::get<double>(peek(0));
                     pop(); // if we get here it means it was good
                     push(negated);
-                } catch (mpark::bad_variant_access&) {
+                } catch (std::bad_variant_access&) {
                     runtimeError("Operand must be a number.");
                     return InterpretResult::RUNTIME_ERROR;
                 }

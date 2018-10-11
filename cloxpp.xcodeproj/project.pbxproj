@@ -30,7 +30,6 @@
 /* Begin PBXFileReference section */
 		EE105475213ABA8B00A08D90 /* vm.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = vm.cpp; sourceTree = "<group>"; };
 		EE105476213ABA8B00A08D90 /* vm.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = vm.hpp; sourceTree = "<group>"; };
-		EE67B8C0213EDAD2004DDC1A /* variant.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = variant.hpp; sourceTree = "<group>"; };
 		EEC564B8213691680020CAA0 /* cloxpp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cloxpp; sourceTree = BUILT_PRODUCTS_DIR; };
 		EEC564BB213691680020CAA0 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		EEC564C2213692730020CAA0 /* common.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = common.hpp; sourceTree = "<group>"; };
@@ -74,7 +73,6 @@
 		EEC564BA213691680020CAA0 /* cloxpp */ = {
 			isa = PBXGroup;
 			children = (
-				EE67B8C0213EDAD2004DDC1A /* variant.hpp */,
 				EEC564BB213691680020CAA0 /* main.cpp */,
 				EEC564C2213692730020CAA0 /* common.hpp */,
 				EEC564C4213694D50020CAA0 /* chunk.cpp */,
@@ -274,6 +272,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
@@ -285,6 +284,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
 				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = "";
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 			};
