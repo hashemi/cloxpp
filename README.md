@@ -19,6 +19,7 @@ This port implements code from the following chapters of Part III of the book:
 17. Compiling Expressions.
 18. Types of Values.
 19. Strings.
+20. Hash Tables. (no code required, will use `std::unordered_map`)
 
 ## Goals & Design
 My goal in this project is to become more proficient in C++.
