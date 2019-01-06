@@ -35,7 +35,6 @@ class Chunk {
     std::vector<int> lines;
 
 public:
-    Chunk();
     uint8_t getCode(int offset) const { return code[offset]; };
     Value getConstant(int constant) const { return constants[constant]; };
     void write(uint8_t byte, int line);

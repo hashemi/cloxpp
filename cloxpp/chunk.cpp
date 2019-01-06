@@ -8,12 +8,6 @@
 
 #include "chunk.hpp"
 
-Chunk::Chunk():
-    code(std::vector<uint8_t>()),
-    constants(std::vector<Value>()),
-    lines(std::vector<int>())
-{ }
-
 void Chunk::write(uint8_t byte, int line) {
     code.push_back(byte);
     lines.push_back(line);
