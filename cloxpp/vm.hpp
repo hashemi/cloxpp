@@ -26,7 +26,8 @@ class VM {
     inline void resetStack() { stack.clear(); }
     
     void runtimeError(const char* format, ...);
-    bool binaryOp(std::function<Value(double,double)> op);
+    template <typename F>
+    bool binaryOp(F op);
     void popTwoAndPush(Value v);
     
     inline void push(Value v) { stack.push_back(v); }

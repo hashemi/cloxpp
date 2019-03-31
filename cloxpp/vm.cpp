@@ -34,7 +34,8 @@ void VM::runtimeError(const char* format, ...) {
     resetStack();
 }
 
-bool VM::binaryOp(std::function<Value(double, double)> op) {
+template <typename F>
+bool VM::binaryOp(F op) {
     try {
         auto b = std::get<double>(peek(0));
         auto a = std::get<double>(peek(1));
