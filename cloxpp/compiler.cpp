@@ -19,8 +19,9 @@ Parser::Parser(const std::string& source, Chunk& chunk) :
 }
 
 bool Parser::compile() {
-    expression();
-    consume(TokenType::_EOF, "Expect end of expression.");
+    while (!match(TokenType::_EOF)) {
+        declaration();
+    }
     endCompiler();
     return !hadError;
 }
@@ -43,6 +44,16 @@ void Parser::consume(TokenType type, const std::string& message) {
     }
     
     errorAtCurrent(message);
+}
+
+bool Parser::check(TokenType type) {
+    return current.type() == type;
+}
+
+bool Parser::match(TokenType type) {
+    if (!check(type)) return false;
+    advance();
+    return true;
 }
 
 void Parser::emit(uint8_t byte) {
@@ -230,8 +241,88 @@ void Parser::parsePrecedence(Precedence precedence) {
     }
 }
 
+uint8_t Parser::identifierConstant(const Token& token) {
+    return makeConstant(std::string(token.text()));
+}
+
+uint8_t Parser::parseVariable(const std::string& errorMessage) {
+    consume(TokenType::IDENTIFIER, errorMessage);
+    return identifierConstant(previous);
+}
+
+void Parser::defineVariable(uint8_t global) {
+    emit(OpCode::DEFINE_GLOBAL, global);
+}
+
 void Parser::expression() {
     parsePrecedence(Precedence::ASSIGNMENT);
+}
+
+void Parser::varDeclaration() {
+    auto global = parseVariable("Expect variable name.");
+
+    if (match(TokenType::EQUAL)) {
+        expression();
+    } else {
+        emit(OpCode::NIL);
+    }
+    consume(TokenType::SEMICOLON, "Expect ';' after variable declaration.");
+    
+    defineVariable(global);
+}
+
+void Parser::expressionStatement() {
+    expression();
+    emit(OpCode::POP);
+    consume(TokenType::SEMICOLON, "Expect ';' after expression.");
+}
+
+void Parser::declaration() {
+    if (match(TokenType::VAR)) {
+        varDeclaration();
+    } else {
+        statement();
+    }
+    
+    if (panicMode) synchronize();
+}
+
+void Parser::statement() {
+    if (match(TokenType::PRINT)) {
+        printStatement();
+    } else {
+        expressionStatement();
+    }
+}
+
+void Parser::printStatement() {
+    expression();
+    consume(TokenType::SEMICOLON, "Expect ';' after value.");
+    emit(OpCode::PRINT);
+}
+
+void Parser::synchronize() {
+    panicMode = false;
+    
+    while (current.type() != TokenType::_EOF) {
+        if (previous.type() == TokenType::SEMICOLON) return;
+        
+        switch (current.type()) {
+            case TokenType::CLASS:
+            case TokenType::FUN:
+            case TokenType::IF:
+            case TokenType::WHILE:
+            case TokenType::PRINT:
+            case TokenType::RETURN:
+                return;
+                
+            default:
+                // Do nothing.
+                ;
+        }
+        
+        advance();
+    }
 }
 
 void Parser::errorAt(const Token& token, const std::string& message) {

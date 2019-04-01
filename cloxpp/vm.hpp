@@ -11,6 +11,7 @@
 
 #include "chunk.hpp"
 #include "compiler.hpp"
+#include <unordered_map>
 
 enum class InterpretResult {
     OK,
@@ -22,6 +23,7 @@ class VM {
     Chunk& chunk;
     unsigned ip;
     std::vector<Value> stack;
+    std::unordered_map<std::string, Value> globals;
     
     inline void resetStack() { stack.clear(); }
     

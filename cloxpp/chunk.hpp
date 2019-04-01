@@ -17,6 +17,8 @@ enum class OpCode: uint8_t {
     NIL,
     TRUE,
     FALSE,
+    POP,
+    DEFINE_GLOBAL,
     EQUAL,
     GREATER,
     LESS,
@@ -26,6 +28,7 @@ enum class OpCode: uint8_t {
     DIVIDE,
     NOT,
     NEGATE,
+    PRINT,
     RETURN,
 };
 

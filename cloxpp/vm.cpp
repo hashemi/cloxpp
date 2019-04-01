@@ -66,6 +66,10 @@ InterpretResult VM::run() {
         return this->chunk.getConstant(readByte());
     };
     
+    auto readString = [this, readConstant]() -> const std::string& {
+        return std::get<std::string>(readConstant());
+    };
+    
     while (true) {
 #ifdef DEBUG_TRACE_EXECUTION
         std::cout << "          ";
@@ -94,6 +98,14 @@ InterpretResult VM::run() {
             case OpCode::NIL:   push(std::monostate()); break;
             case OpCode::TRUE:  push(true); break;
             case OpCode::FALSE: push(false); break;
+            case OpCode::POP: pop(); break;
+                
+            case OpCode::DEFINE_GLOBAL: {
+                auto name = readString();
+                globals[name] = peek(0);
+                pop();
+                break;
+            }
                 
             case OpCode::EQUAL: {
                 popTwoAndPush(peek(0) == peek(1));
@@ -141,10 +153,14 @@ InterpretResult VM::run() {
                 }
                 break;
                 
-            case OpCode::RETURN: {
+            case OpCode::PRINT: {
                 std::cout << pop() << std::endl;
-                return InterpretResult::OK;
                 break;
+            }
+                
+            case OpCode::RETURN: {
+                // Exit interpreter.
+                return InterpretResult::OK;
             }
         }
     }

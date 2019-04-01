@@ -62,6 +62,10 @@ int Chunk::disassembleInstruction(int offset) {
             return simpleInstruction("OP_TRUE", offset);
         case OpCode::FALSE:
             return simpleInstruction("OP_FALSE", offset);
+        case OpCode::POP:
+            return simpleInstruction("OP_POP", offset);
+        case OpCode::DEFINE_GLOBAL:
+            return constantInstruction("OP_DEFINE_GLOBAL", *this, offset);
         case OpCode::EQUAL:
             return simpleInstruction("OP_EQUAL", offset);
         case OpCode::GREATER:
@@ -80,6 +84,8 @@ int Chunk::disassembleInstruction(int offset) {
             return simpleInstruction("OP_NOT", offset);
         case OpCode::NEGATE:
             return simpleInstruction("OP_NEGATE", offset);
+        case OpCode::PRINT:
+            return simpleInstruction("OP_PRINT", offset);
         case OpCode::RETURN:
             return simpleInstruction("OP_RETURN", offset);
     }

@@ -49,6 +49,8 @@ class Parser {
     
     void advance();
     void consume(TokenType type, const std::string& message);
+    bool check(TokenType type);
+    bool match(TokenType type);
     
     void emit(uint8_t byte);
     void emit(OpCode op);
@@ -68,8 +70,17 @@ class Parser {
     void unary();
     ParseRule& getRule(TokenType type);
     void parsePrecedence(Precedence precedence);
+    uint8_t identifierConstant(const Token& token);
+    uint8_t parseVariable(const std::string& errorMessage);
+    void defineVariable(uint8_t global);
     void expression();
-    
+    void varDeclaration();
+    void expressionStatement();
+    void declaration();
+    void statement();
+    void printStatement();
+    void synchronize();
+
     Chunk& currentChunk() {
         return compilingChunk;
     }
