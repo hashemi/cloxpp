@@ -102,7 +102,7 @@ void Parser::endCompiler() {
 #endif
 }
 
-void Parser::binary() {
+void Parser::binary(bool canAssign) {
     // Remember the operator.
     auto operatorType = previous.type();
     
@@ -127,7 +127,7 @@ void Parser::binary() {
     }
 }
 
-void Parser::literal() {
+void Parser::literal(bool canAssign) {
     switch (previous.type()) {
         case TokenType::FALSE: emit(OpCode::FALSE); break;
         case TokenType::NIL:   emit(OpCode::NIL); break;
@@ -137,33 +137,39 @@ void Parser::literal() {
     }
 }
 
-void Parser::grouping() {
+void Parser::grouping(bool canAssign) {
     expression();
     consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
 }
 
-void Parser::number() {
+void Parser::number(bool canAssign) {
     Value value = std::stod(std::string(previous.text()));
     emitConstant(value);
 }
 
-void Parser::string() {
+void Parser::string(bool canAssign) {
     auto str = previous.text();
     str.remove_prefix(1);
     str.remove_suffix(1);
     emitConstant(std::string(str));
 }
 
-void Parser::namedVariable(const Token& token) {
+void Parser::namedVariable(const Token& token, bool canAssign) {
     auto arg = identifierConstant(token);
-    emit(OpCode::GET_GLOBAL, arg);
+    
+    if (canAssign && match(TokenType::EQUAL)) {
+        expression();
+        emit(OpCode::SET_GLOBAL, arg);
+    } else {
+        emit(OpCode::GET_GLOBAL, arg);
+    }
 }
 
-void Parser::variable() {
-    namedVariable(previous);
+void Parser::variable(bool canAssign) {
+    namedVariable(previous, canAssign);
 }
 
-void Parser::unary() {
+void Parser::unary(bool canAssign) {
     auto operatorType = previous.type();
     
     // Compile the operand.
@@ -180,13 +186,13 @@ void Parser::unary() {
 }
 
 ParseRule& Parser::getRule(TokenType type) {
-    auto grouping = [this]() { this->grouping(); };
-    auto unary = [this]() { this->unary(); };
-    auto binary = [this]() { this->binary(); };
-    auto number = [this]() { this->number(); };
-    auto string = [this]() { this->string(); };
-    auto literal = [this]() { this->literal(); };
-    auto variable = [this]() { this->variable(); };
+    auto grouping = [this](bool canAssign) { this->grouping(canAssign); };
+    auto unary = [this](bool canAssign) { this->unary(canAssign); };
+    auto binary = [this](bool canAssign) { this->binary(canAssign); };
+    auto number = [this](bool canAssign) { this->number(canAssign); };
+    auto string = [this](bool canAssign) { this->string(canAssign); };
+    auto literal = [this](bool canAssign) { this->literal(canAssign); };
+    auto variable = [this](bool canAssign) { this->variable(canAssign); };
     
     static ParseRule rules[] = {
         { grouping,    nullptr,    Precedence::CALL },       // TOKEN_LEFT_PAREN
@@ -242,12 +248,18 @@ void Parser::parsePrecedence(Precedence precedence) {
         return;
     }
     
-    prefixRule();
+    auto canAssign = precedence <= Precedence::ASSIGNMENT;
+    prefixRule(canAssign);
     
     while (precedence <= getRule(current.type()).precedence) {
         advance();
         auto infixRule = getRule(previous.type()).infix;
-        infixRule();
+        infixRule(canAssign);
+    }
+    
+    if (canAssign && match(TokenType::EQUAL)) {
+        error("Invalid assignment target.");
+        expression();
     }
 }
 

@@ -20,6 +20,7 @@ enum class OpCode: uint8_t {
     POP,
     GET_GLOBAL,
     DEFINE_GLOBAL,
+    SET_GLOBAL,
     EQUAL,
     GREATER,
     LESS,

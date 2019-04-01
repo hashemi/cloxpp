@@ -119,6 +119,17 @@ InterpretResult VM::run() {
                 break;
             }
                 
+            case OpCode::SET_GLOBAL: {
+                auto name = readString();
+                auto found = globals.find(name);
+                if (found == globals.end()) {
+                    runtimeError("Undefined variable '%s'.", name.c_str());
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                found->second = peek(0);
+                break;
+            }
+
             case OpCode::EQUAL: {
                 popTwoAndPush(peek(0) == peek(1));
                 break;

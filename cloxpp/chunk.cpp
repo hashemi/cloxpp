@@ -68,6 +68,8 @@ int Chunk::disassembleInstruction(int offset) {
             return constantInstruction("OP_GET_GLOBAL", *this, offset);
         case OpCode::DEFINE_GLOBAL:
             return constantInstruction("OP_DEFINE_GLOBAL", *this, offset);
+        case OpCode::SET_GLOBAL:
+            return constantInstruction("OP_SET_GLOBAL", *this, offset);
         case OpCode::EQUAL:
             return simpleInstruction("OP_EQUAL", offset);
         case OpCode::GREATER:

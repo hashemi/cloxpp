@@ -29,11 +29,11 @@ enum class Precedence {
 
 class Parser;
 
-typedef void (Parser::*ParseFn)();
+typedef void (Parser::*ParseFn)(bool canAssign);
 
 struct ParseRule {
-    std::function<void()> prefix;
-    std::function<void()> infix;
+    std::function<void(bool)> prefix;
+    std::function<void(bool)> infix;
     Precedence precedence;
 };
 
@@ -62,14 +62,14 @@ class Parser {
     
     void endCompiler();
     
-    void binary();
-    void literal();
-    void grouping();
-    void number();
-    void string();
-    void namedVariable(const Token& token);
-    void variable();
-    void unary();
+    void binary(bool canAssign);
+    void literal(bool canAssign);
+    void grouping(bool canAssign);
+    void number(bool canAssign);
+    void string(bool canAssign);
+    void namedVariable(const Token& token, bool canAssign);
+    void variable(bool canAssign);
+    void unary(bool canAssign);
     ParseRule& getRule(TokenType type);
     void parsePrecedence(Precedence precedence);
     uint8_t identifierConstant(const Token& token);
