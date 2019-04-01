@@ -67,6 +67,8 @@ class Parser {
     void grouping();
     void number();
     void string();
+    void namedVariable(const Token& token);
+    void variable();
     void unary();
     ParseRule& getRule(TokenType type);
     void parsePrecedence(Precedence precedence);

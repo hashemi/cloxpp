@@ -154,6 +154,15 @@ void Parser::string() {
     emitConstant(std::string(str));
 }
 
+void Parser::namedVariable(const Token& token) {
+    auto arg = identifierConstant(token);
+    emit(OpCode::GET_GLOBAL, arg);
+}
+
+void Parser::variable() {
+    namedVariable(previous);
+}
+
 void Parser::unary() {
     auto operatorType = previous.type();
     
@@ -177,6 +186,7 @@ ParseRule& Parser::getRule(TokenType type) {
     auto number = [this]() { this->number(); };
     auto string = [this]() { this->string(); };
     auto literal = [this]() { this->literal(); };
+    auto variable = [this]() { this->variable(); };
     
     static ParseRule rules[] = {
         { grouping,    nullptr,    Precedence::CALL },       // TOKEN_LEFT_PAREN
@@ -198,7 +208,7 @@ ParseRule& Parser::getRule(TokenType type) {
         { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_GREATER_EQUAL
         { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_LESS
         { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_LESS_EQUAL
-        { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_IDENTIFIER
+        { variable,     nullptr,    Precedence::NONE },       // TOKEN_IDENTIFIER
         { string,      nullptr,    Precedence::NONE },       // TOKEN_STRING
         { number,      nullptr,    Precedence::NONE },       // TOKEN_NUMBER
         { nullptr,     nullptr,    Precedence::AND },        // TOKEN_AND
