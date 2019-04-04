@@ -100,6 +100,12 @@ InterpretResult VM::run() {
             case OpCode::FALSE: push(false); break;
             case OpCode::POP: pop(); break;
                 
+            case OpCode::GET_LOCAL: {
+                uint8_t slot = readByte();
+                push(stack[slot]);
+                break;
+            }
+                
             case OpCode::GET_GLOBAL: {
                 auto name = readString();
                 auto found = globals.find(name);
@@ -116,6 +122,12 @@ InterpretResult VM::run() {
                 auto name = readString();
                 globals[name] = peek(0);
                 pop();
+                break;
+            }
+                
+            case OpCode::SET_LOCAL: {
+                uint8_t slot = readByte();
+                stack[slot] = peek(0);
                 break;
             }
                 

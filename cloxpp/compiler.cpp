@@ -8,12 +8,66 @@
 
 #include "compiler.hpp"
 
+void Compiler::addLocal(const std::string& name) {
+    if (locals.size() == UINT8_COUNT) {
+        parser->error("Too many local variables in function.");
+        return;
+    }
+    locals.emplace_back(Local(name, -1));
+}
+
+void Compiler::declareVariable(const std::string& name) {
+    if (scopeDepth == 0) return;
+    
+    for (long i = locals.size() - 1; i >= 0; i--) {
+        if (locals[i].depth != -1 && locals[i].depth < scopeDepth) break;
+        if (locals[i].name == name) {
+            parser->error("Variable with this name already declared in this scope.");
+        }
+    }
+    
+    addLocal(name);
+}
+
+void Compiler::markInitialized() {
+    if (scopeDepth == 0) return;
+    locals.back().depth = scopeDepth;
+}
+
+int Compiler::resolveLocal(const std::string& name) {
+    for (long i = locals.size() - 1; i >=0; i--) {
+        if (locals[i].name == name) {
+            if (locals[i].depth == -1) {
+                parser->error("Cannot read local variable in its own initializer.");
+            }
+            return static_cast<int>(i);
+        }
+    }
+    
+    return -1;
+}
+
+void Compiler::beginScope() { scopeDepth++; }
+
+void Compiler::endScope() {
+    scopeDepth--;
+    while (!locals.empty() && locals.back().depth > scopeDepth) {
+        parser->emit(OpCode::POP);
+        locals.pop_back();
+    }
+}
+
+bool Compiler::isLocal() {
+    return scopeDepth > 0;
+}
+
 Parser::Parser(const std::string& source, Chunk& chunk) :
     previous(Token(TokenType::_EOF, source, 0)),
     current(Token(TokenType::_EOF, source, 0)),
     scanner(Scanner(source)),
     hadError(false), panicMode(false),
-    compilingChunk(chunk)
+    compilingChunk(chunk),
+    compiler(this)
 {
     advance();
 }
@@ -154,19 +208,28 @@ void Parser::string(bool canAssign) {
     emitConstant(std::string(str));
 }
 
-void Parser::namedVariable(const Token& token, bool canAssign) {
-    auto arg = identifierConstant(token);
+void Parser::namedVariable(const std::string& name, bool canAssign) {
+    OpCode getOp, setOp;
+    auto arg = compiler.resolveLocal(name);
+    if (arg != -1) {
+        getOp = OpCode::GET_LOCAL;
+        setOp = OpCode::SET_LOCAL;
+    } else {
+        arg = identifierConstant(name);
+        getOp = OpCode::GET_GLOBAL;
+        setOp = OpCode::SET_GLOBAL;
+    }
     
     if (canAssign && match(TokenType::EQUAL)) {
         expression();
-        emit(OpCode::SET_GLOBAL, arg);
+        emit(setOp, (uint8_t)arg);
     } else {
-        emit(OpCode::GET_GLOBAL, arg);
+        emit(getOp, (uint8_t)arg);
     }
 }
 
 void Parser::variable(bool canAssign) {
-    namedVariable(previous, canAssign);
+    namedVariable(std::string(previous.text()), canAssign);
 }
 
 void Parser::unary(bool canAssign) {
@@ -263,21 +326,38 @@ void Parser::parsePrecedence(Precedence precedence) {
     }
 }
 
-uint8_t Parser::identifierConstant(const Token& token) {
-    return makeConstant(std::string(token.text()));
+int Parser::identifierConstant(const std::string& name) {
+    return makeConstant(name);
 }
 
 uint8_t Parser::parseVariable(const std::string& errorMessage) {
     consume(TokenType::IDENTIFIER, errorMessage);
-    return identifierConstant(previous);
+    
+    compiler.declareVariable(std::string(previous.text()));
+    if (compiler.isLocal()) return 0;
+    
+    return identifierConstant(std::string(previous.text()));
 }
 
 void Parser::defineVariable(uint8_t global) {
+    if (compiler.isLocal()) {
+        compiler.markInitialized();
+        return;
+    }
+    
     emit(OpCode::DEFINE_GLOBAL, global);
 }
 
 void Parser::expression() {
     parsePrecedence(Precedence::ASSIGNMENT);
+}
+
+void Parser::block() {
+    while (!check(TokenType::RIGHT_BRACE) && !check(TokenType::_EOF)) {
+        declaration();
+    }
+    
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
 }
 
 void Parser::varDeclaration() {
@@ -312,6 +392,10 @@ void Parser::declaration() {
 void Parser::statement() {
     if (match(TokenType::PRINT)) {
         printStatement();
+    } else if (match(TokenType::LEFT_BRACE)) {
+        compiler.beginScope();
+        block();
+        compiler.endScope();
     } else {
         expressionStatement();
     }

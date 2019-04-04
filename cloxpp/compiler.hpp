@@ -37,10 +37,35 @@ struct ParseRule {
     Precedence precedence;
 };
 
+struct Local {
+    std::string name;
+    int depth;
+    Local(std::string name, int depth): name(name), depth(depth) {};
+};
+
+class Parser;
+
+class Compiler {
+    std::vector<Local> locals;
+    int scopeDepth = 0;
+    Parser* parser;
+
+public:
+    explicit Compiler(Parser* parser): parser(parser) {};
+    void addLocal(const std::string& name);
+    void declareVariable(const std::string& name);
+    void markInitialized();
+    int resolveLocal(const std::string& name);
+    void beginScope();
+    void endScope();
+    bool isLocal();
+};
+
 class Parser {
     Token current;
     Token previous;
     Scanner scanner;
+    Compiler compiler;
     
     bool hadError;
     bool panicMode;
@@ -67,15 +92,16 @@ class Parser {
     void grouping(bool canAssign);
     void number(bool canAssign);
     void string(bool canAssign);
-    void namedVariable(const Token& token, bool canAssign);
+    void namedVariable(const std::string& name, bool canAssign);
     void variable(bool canAssign);
     void unary(bool canAssign);
     ParseRule& getRule(TokenType type);
     void parsePrecedence(Precedence precedence);
-    uint8_t identifierConstant(const Token& token);
+    int identifierConstant(const std::string& name);
     uint8_t parseVariable(const std::string& errorMessage);
     void defineVariable(uint8_t global);
     void expression();
+    void block();
     void varDeclaration();
     void expressionStatement();
     void declaration();
@@ -97,6 +123,7 @@ class Parser {
         errorAt(current, message);
     };
     
+    friend Compiler;
     
 public:
     Parser(const std::string& source, Chunk& chunk);

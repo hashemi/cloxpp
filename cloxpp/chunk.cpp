@@ -43,6 +43,12 @@ static int constantInstruction(const std::string& name, const Chunk& chunk, int 
     return offset + 2;
 }
 
+static int byteInstruction(const std::string& name, const Chunk& chunk, int offset) {
+    auto slot = chunk.getCode(offset + 1);
+    printf("%-16s %4d\n", name.c_str(), slot);
+    return offset + 2;
+}
+
 int Chunk::disassembleInstruction(int offset) {
     printf("%04d ", offset);
     
@@ -64,10 +70,14 @@ int Chunk::disassembleInstruction(int offset) {
             return simpleInstruction("OP_FALSE", offset);
         case OpCode::POP:
             return simpleInstruction("OP_POP", offset);
+        case OpCode::GET_LOCAL:
+            return byteInstruction("OP_GET_LOCAL", *this, offset);
         case OpCode::GET_GLOBAL:
             return constantInstruction("OP_GET_GLOBAL", *this, offset);
         case OpCode::DEFINE_GLOBAL:
             return constantInstruction("OP_DEFINE_GLOBAL", *this, offset);
+        case OpCode::SET_LOCAL:
+            return byteInstruction("OP_SET_LOCAL", *this, offset);
         case OpCode::SET_GLOBAL:
             return constantInstruction("OP_SET_GLOBAL", *this, offset);
         case OpCode::EQUAL:
