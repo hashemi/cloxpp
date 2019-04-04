@@ -442,7 +442,7 @@ void Parser::errorAt(const Token& token, const std::string& message) {
     } else if (token.type() == TokenType::ERROR) {
         // Nothing.
     } else {
-        std::cerr << token.text();
+        std::cerr << " at '" << token.text() << "'";
     }
     
     std::cerr << ": " << message << std::endl;
