@@ -19,7 +19,19 @@ This port implements code from the following chapters of Part III of the book:
 17. Compiling Expressions.
 18. Types of Values.
 19. Strings.
-20. Hash Tables. (no code required, will use `std::unordered_map`)
+20. Hash Tables. (no code, using `std` containers)
+21. Globals Variables.
+22. Local Variables.
+
+## Tests
+
+The test suite is from the reference C implementation. To run the tests:
+
+```
+./test_cloxpp.py chap22_local
+```
+
+The test script assumes that the binary is in `build/Release/cloxpp`, which is where it ends up after running `xcodebuild` from the command line.
 
 ## Goals & Design
 My goal in this project is to become more proficient in C++.
