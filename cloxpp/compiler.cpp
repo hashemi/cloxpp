@@ -128,6 +128,16 @@ void Parser::emit(OpCode op1, OpCode op2) {
     emit(op2);
 }
 
+void Parser::emitLoop(int loopStart) {
+    emit(OpCode::LOOP);
+    
+    int offset = currentChunk().count() - loopStart + 2;
+    if (offset > UINT16_MAX) { error("Loop body too large."); }
+    
+    emit((offset >> 8) & 0xff);
+    emit(offset & 0xff);
+}
+
 int Parser::emitJump(OpCode op) {
     emit(op);
     emit(0xff);
@@ -451,6 +461,8 @@ void Parser::statement() {
         printStatement();
     } else if (match(TokenType::IF)) {
         ifStatement();
+    } else if (match(TokenType::WHILE)) {
+        whileStatement();
     } else if (match(TokenType::LEFT_BRACE)) {
         compiler.beginScope();
         block();
@@ -464,6 +476,24 @@ void Parser::printStatement() {
     expression();
     consume(TokenType::SEMICOLON, "Expect ';' after value.");
     emit(OpCode::PRINT);
+}
+
+void Parser::whileStatement() {
+    int loopStart = currentChunk().count();
+    
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'while'.");
+    expression();
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after condition.");
+    
+    int exitJump = emitJump(OpCode::JUMP_IF_FALSE);
+    
+    emit(OpCode::POP);
+    statement();
+    
+    emitLoop(loopStart);
+    
+    patchJump(exitJump);
+    emit(OpCode::POP);
 }
 
 void Parser::synchronize() {

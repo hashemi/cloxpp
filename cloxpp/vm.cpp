@@ -204,6 +204,12 @@ InterpretResult VM::run() {
                 break;
             }
                 
+            case OpCode::LOOP: {
+                auto offset = readShort();
+                this->ip -= offset;
+                break;
+            }
+                
             case OpCode::JUMP_IF_FALSE: {
                 auto offset = readShort();
                 if (isFalsy(peek(0))) {

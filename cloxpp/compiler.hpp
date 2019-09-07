@@ -81,6 +81,7 @@ class Parser {
     void emit(OpCode op);
     void emit(OpCode op, uint8_t byte);
     void emit(OpCode op1, OpCode op2);
+    void emitLoop(int loopStart);
     int emitJump(OpCode op);
     void emitReturn();
     uint8_t makeConstant(Value value);
@@ -112,6 +113,7 @@ class Parser {
     void declaration();
     void statement();
     void printStatement();
+    void whileStatement();
     void synchronize();
 
     Chunk& currentChunk() {
