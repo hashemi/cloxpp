@@ -33,6 +33,8 @@ enum class OpCode: uint8_t {
     NOT,
     NEGATE,
     PRINT,
+    JUMP,
+    JUMP_IF_FALSE,
     RETURN,
 };
 
@@ -43,6 +45,7 @@ class Chunk {
 
 public:
     uint8_t getCode(int offset) const { return code[offset]; };
+    void setCode(int offset, uint8_t value) { code[offset] = value; }
     Value getConstant(int constant) const { return constants[constant]; };
     void write(uint8_t byte, int line);
     void write(OpCode opcode, int line);
@@ -50,6 +53,7 @@ public:
     int disassembleInstruction(int offset);
     void disassemble(const std::string& name);
     int getLine(int instruction) { return lines[instruction]; }
+    int count() { return static_cast<int>(code.size()); }
 };
 
 #endif /* chunk_hpp */

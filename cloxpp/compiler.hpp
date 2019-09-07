@@ -81,9 +81,11 @@ class Parser {
     void emit(OpCode op);
     void emit(OpCode op, uint8_t byte);
     void emit(OpCode op1, OpCode op2);
+    int emitJump(OpCode op);
     void emitReturn();
     uint8_t makeConstant(Value value);
     void emitConstant(Value value);
+    void patchJump(int offset);
     
     void endCompiler();
     
@@ -104,6 +106,7 @@ class Parser {
     void block();
     void varDeclaration();
     void expressionStatement();
+    void ifStatement();
     void declaration();
     void statement();
     void printStatement();

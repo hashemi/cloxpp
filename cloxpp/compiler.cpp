@@ -128,6 +128,13 @@ void Parser::emit(OpCode op1, OpCode op2) {
     emit(op2);
 }
 
+int Parser::emitJump(OpCode op) {
+    emit(op);
+    emit(0xff);
+    emit(0xff);
+    return currentChunk().count() - 2;
+}
+
 void Parser::emitReturn() {
     emit(OpCode::RETURN);
 }
@@ -144,6 +151,18 @@ uint8_t Parser::makeConstant(Value value) {
 
 void Parser::emitConstant(Value value) {
     emit(OpCode::CONSTANT, makeConstant(value));
+}
+
+void Parser::patchJump(int offset) {
+    // -2 to adjust for the bytecode for the jump offset itself.
+    int jump = currentChunk().count() - offset - 2;
+    
+    if (jump > UINT16_MAX) {
+        error("Too much code to jump over.");
+    }
+    
+    currentChunk().setCode(offset, (jump >> 8) & 0xff);
+    currentChunk().setCode(offset + 1, jump & 0xff);
 }
 
 void Parser::endCompiler() {
@@ -379,6 +398,22 @@ void Parser::expressionStatement() {
     consume(TokenType::SEMICOLON, "Expect ';' after expression.");
 }
 
+void Parser::ifStatement() {
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+    expression();
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after condition.");
+    
+    int thenJump = emitJump(OpCode::JUMP_IF_FALSE);
+    emit(OpCode::POP);
+    statement();
+    int elseJump = emitJump(OpCode::JUMP);
+    
+    patchJump(thenJump);
+    emit(OpCode::POP);
+    if (match(TokenType::ELSE)) { statement(); }
+    patchJump(elseJump);
+}
+
 void Parser::declaration() {
     if (match(TokenType::VAR)) {
         varDeclaration();
@@ -392,6 +427,8 @@ void Parser::declaration() {
 void Parser::statement() {
     if (match(TokenType::PRINT)) {
         printStatement();
+    } else if (match(TokenType::IF)) {
+        ifStatement();
     } else if (match(TokenType::LEFT_BRACE)) {
         compiler.beginScope();
         block();

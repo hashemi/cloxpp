@@ -66,6 +66,11 @@ InterpretResult VM::run() {
         return this->chunk.getConstant(readByte());
     };
     
+    auto readShort = [this]() -> uint16_t {
+        this->ip += 2;
+        return ((this->chunk.getCode(this->ip - 2) << 8) | (this->chunk.getCode(this->ip - 1)));
+    };
+    
     auto readString = [this, readConstant]() -> const std::string& {
         return std::get<std::string>(readConstant());
     };
@@ -192,7 +197,21 @@ InterpretResult VM::run() {
                 std::cout << pop() << std::endl;
                 break;
             }
+            
+            case OpCode::JUMP: {
+                auto offset = readShort();
+                this->ip += offset;
+                break;
+            }
                 
+            case OpCode::JUMP_IF_FALSE: {
+                auto offset = readShort();
+                if (isFalsy(peek(0))) {
+                    this->ip += offset;
+                }
+                break;
+            }
+            
             case OpCode::RETURN: {
                 // Exit interpreter.
                 return InterpretResult::OK;
