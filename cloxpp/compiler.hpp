@@ -93,9 +93,11 @@ class Parser {
     void literal(bool canAssign);
     void grouping(bool canAssign);
     void number(bool canAssign);
+    void or_(bool canAssign);
     void string(bool canAssign);
     void namedVariable(const std::string& name, bool canAssign);
     void variable(bool canAssign);
+    void and_(bool canAssign);
     void unary(bool canAssign);
     ParseRule& getRule(TokenType type);
     void parsePrecedence(Precedence precedence);

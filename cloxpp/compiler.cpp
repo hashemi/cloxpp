@@ -220,6 +220,17 @@ void Parser::number(bool canAssign) {
     emitConstant(value);
 }
 
+void Parser::or_(bool canAssign) {
+    int elseJump = emitJump(OpCode::JUMP_IF_FALSE);
+    int endJump = emitJump(OpCode::JUMP);
+    
+    patchJump(elseJump);
+    emit(OpCode::POP);
+    
+    parsePrecedence(Precedence::OR);
+    patchJump(endJump);
+}
+
 void Parser::string(bool canAssign) {
     auto str = previous.text();
     str.remove_prefix(1);
@@ -251,6 +262,15 @@ void Parser::variable(bool canAssign) {
     namedVariable(std::string(previous.text()), canAssign);
 }
 
+void Parser::and_(bool canAssign) {
+    int endJump = emitJump(OpCode::JUMP_IF_FALSE);
+    
+    emit(OpCode::POP);
+    parsePrecedence(Precedence::AND);
+    
+    patchJump(endJump);
+}
+
 void Parser::unary(bool canAssign) {
     auto operatorType = previous.type();
     
@@ -275,6 +295,8 @@ ParseRule& Parser::getRule(TokenType type) {
     auto string = [this](bool canAssign) { this->string(canAssign); };
     auto literal = [this](bool canAssign) { this->literal(canAssign); };
     auto variable = [this](bool canAssign) { this->variable(canAssign); };
+    auto and_ = [this](bool canAssign) { this->and_(canAssign); };
+    auto or_ = [this](bool canAssign) { this->or_(canAssign); };
     
     static ParseRule rules[] = {
         { grouping,    nullptr,    Precedence::CALL },       // TOKEN_LEFT_PAREN
@@ -296,10 +318,10 @@ ParseRule& Parser::getRule(TokenType type) {
         { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_GREATER_EQUAL
         { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_LESS
         { nullptr,     binary,     Precedence::COMPARISON }, // TOKEN_LESS_EQUAL
-        { variable,     nullptr,    Precedence::NONE },       // TOKEN_IDENTIFIER
+        { variable,    nullptr,    Precedence::NONE },       // TOKEN_IDENTIFIER
         { string,      nullptr,    Precedence::NONE },       // TOKEN_STRING
         { number,      nullptr,    Precedence::NONE },       // TOKEN_NUMBER
-        { nullptr,     nullptr,    Precedence::AND },        // TOKEN_AND
+        { nullptr,     and_,       Precedence::AND },        // TOKEN_AND
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_CLASS
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_ELSE
         { literal,     nullptr,    Precedence::NONE },       // TOKEN_FALSE
@@ -307,7 +329,7 @@ ParseRule& Parser::getRule(TokenType type) {
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_FOR
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_IF
         { literal,     nullptr,    Precedence::NONE },       // TOKEN_NIL
-        { nullptr,     nullptr,    Precedence::OR },         // TOKEN_OR
+        { nullptr,     or_,        Precedence::OR },         // TOKEN_OR
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_PRINT
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_RETURN
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_SUPER
