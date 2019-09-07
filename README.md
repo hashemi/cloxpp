@@ -22,13 +22,14 @@ This port implements code from the following chapters of Part III of the book:
 20. Hash Tables. (no code, using `std` containers)
 21. Globals Variables.
 22. Local Variables.
+23. Jumping Back and Forth.
 
 ## Tests
 
 The test suite is from the reference C implementation. To run the tests:
 
 ```
-./test_cloxpp.py chap22_local
+./test_cloxpp.py chap23_jumping
 ```
 
 The test script assumes that the binary is in `build/Release/cloxpp`, which is where it ends up after running `xcodebuild` from the command line.
