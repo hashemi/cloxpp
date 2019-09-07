@@ -430,6 +430,55 @@ void Parser::expressionStatement() {
     consume(TokenType::SEMICOLON, "Expect ';' after expression.");
 }
 
+void Parser::forStatement() {
+    compiler.beginScope();
+    
+    consume(TokenType::LEFT_PAREN, "Expect '(' after 'for'.");
+    if (match(TokenType::VAR)) {
+        varDeclaration();
+    } else if (match(TokenType::SEMICOLON)) {
+        // no initializer.
+    } else {
+        expressionStatement();
+    }
+    
+    int loopStart = currentChunk().count();
+    
+    int exitJump = -1;
+    if (!match(TokenType::SEMICOLON)) {
+        expression();
+        consume(TokenType::SEMICOLON, "Expect ';' after loop condition.");
+        
+        // Jump out of the loop if the condition is false.
+        exitJump = emitJump(OpCode::JUMP_IF_FALSE);
+        emit(OpCode::POP);
+    }
+
+    if (!match(TokenType::RIGHT_PAREN)) {
+        int bodyJump = emitJump(OpCode::JUMP);
+        
+        int incrementStart = currentChunk().count();
+        expression();
+        emit(OpCode::POP);
+        consume(TokenType::RIGHT_PAREN, "Expect ')' after for clauses.");
+        
+        emitLoop(loopStart);
+        loopStart = incrementStart;
+        patchJump(bodyJump);
+    }
+    
+    statement();
+    
+    emitLoop(loopStart);
+    
+    if (exitJump != -1) {
+        patchJump(exitJump);
+        emit(OpCode::POP); // Condition.
+    }
+
+    compiler.endScope();
+}
+
 void Parser::ifStatement() {
     consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
     expression();
@@ -459,6 +508,8 @@ void Parser::declaration() {
 void Parser::statement() {
     if (match(TokenType::PRINT)) {
         printStatement();
+    } else if (match(TokenType::FOR)) {
+        forStatement();
     } else if (match(TokenType::IF)) {
         ifStatement();
     } else if (match(TokenType::WHILE)) {

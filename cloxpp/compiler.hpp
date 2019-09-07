@@ -109,6 +109,7 @@ class Parser {
     void block();
     void varDeclaration();
     void expressionStatement();
+    void forStatement();
     void ifStatement();
     void declaration();
     void statement();
