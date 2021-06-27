@@ -8,7 +8,7 @@
 
 #include <fstream>
 #include "common.hpp"
-#include "chunk.hpp"
+#include "value.hpp"
 #include "vm.hpp"
 
 static void repl(VM& vm) {

@@ -10,9 +10,31 @@
 #define value_hpp
 
 #include "common.hpp"
+#include "opcode.hpp"
 #include <variant>
+#include <memory>
+
+class Chunk;
 
 using Value = std::variant<double, bool, std::monostate, std::string>;
+
+class Chunk {
+    std::vector<uint8_t> code;
+    std::vector<Value> constants;
+    std::vector<int> lines;
+
+public:
+    uint8_t getCode(int offset) const { return code[offset]; };
+    void setCode(int offset, uint8_t value) { code[offset] = value; }
+    const Value& getConstant(int constant) const { return constants[constant]; };
+    void write(uint8_t byte, int line);
+    void write(OpCode opcode, int line);
+    unsigned long addConstant(Value value);
+    int disassembleInstruction(int offset);
+    void disassemble(const std::string& name);
+    int getLine(int instruction) { return lines[instruction]; }
+    int count() { return static_cast<int>(code.size()); }
+};
 
 struct OutputVisitor {
     void operator()(const double d) const { std::cout << d; }

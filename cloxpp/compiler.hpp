@@ -10,7 +10,7 @@
 #define compiler_hpp
 
 #include "scanner.hpp"
-#include "chunk.hpp"
+#include "value.hpp"
 #include <iostream>
 
 enum class Precedence {

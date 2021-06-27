@@ -9,7 +9,7 @@
 #ifndef vm_hpp
 #define vm_hpp
 
-#include "chunk.hpp"
+#include "value.hpp"
 #include "compiler.hpp"
 #include <unordered_map>
 

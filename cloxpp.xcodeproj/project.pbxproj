@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		EE105477213ABA8B00A08D90 /* vm.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EE105475213ABA8B00A08D90 /* vm.cpp */; };
 		EEC564BC213691680020CAA0 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EEC564BB213691680020CAA0 /* main.cpp */; };
-		EEC564C6213694D50020CAA0 /* chunk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EEC564C4213694D50020CAA0 /* chunk.cpp */; };
 		EEC564CC213A511C0020CAA0 /* value.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EEC564CA213A511C0020CAA0 /* value.cpp */; };
 		EED88138213C7DAA004C3077 /* compiler.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EED88136213C7DAA004C3077 /* compiler.cpp */; };
 		EED8813B213C7DFF004C3077 /* scanner.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EED88139213C7DFF004C3077 /* scanner.cpp */; };
@@ -30,11 +29,10 @@
 /* Begin PBXFileReference section */
 		EE105475213ABA8B00A08D90 /* vm.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = vm.cpp; sourceTree = "<group>"; };
 		EE105476213ABA8B00A08D90 /* vm.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = vm.hpp; sourceTree = "<group>"; };
+		EE39777126886BE800E508C8 /* opcode.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = opcode.hpp; sourceTree = "<group>"; };
 		EEC564B8213691680020CAA0 /* cloxpp */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = cloxpp; sourceTree = BUILT_PRODUCTS_DIR; };
 		EEC564BB213691680020CAA0 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		EEC564C2213692730020CAA0 /* common.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = common.hpp; sourceTree = "<group>"; };
-		EEC564C4213694D50020CAA0 /* chunk.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = chunk.cpp; sourceTree = "<group>"; };
-		EEC564C5213694D50020CAA0 /* chunk.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = chunk.hpp; sourceTree = "<group>"; };
 		EEC564CA213A511C0020CAA0 /* value.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = value.cpp; sourceTree = "<group>"; };
 		EEC564CB213A511C0020CAA0 /* value.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = value.hpp; sourceTree = "<group>"; };
 		EED88136213C7DAA004C3077 /* compiler.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = compiler.cpp; sourceTree = "<group>"; };
@@ -75,8 +73,7 @@
 			children = (
 				EEC564BB213691680020CAA0 /* main.cpp */,
 				EEC564C2213692730020CAA0 /* common.hpp */,
-				EEC564C4213694D50020CAA0 /* chunk.cpp */,
-				EEC564C5213694D50020CAA0 /* chunk.hpp */,
+				EE39777126886BE800E508C8 /* opcode.hpp */,
 				EEC564CA213A511C0020CAA0 /* value.cpp */,
 				EEC564CB213A511C0020CAA0 /* value.hpp */,
 				EE105475213ABA8B00A08D90 /* vm.cpp */,
@@ -149,7 +146,6 @@
 				EEC564BC213691680020CAA0 /* main.cpp in Sources */,
 				EEC564CC213A511C0020CAA0 /* value.cpp in Sources */,
 				EE105477213ABA8B00A08D90 /* vm.cpp in Sources */,
-				EEC564C6213694D50020CAA0 /* chunk.cpp in Sources */,
 				EED8813B213C7DFF004C3077 /* scanner.cpp in Sources */,
 				EED88138213C7DAA004C3077 /* compiler.cpp in Sources */,
 			);
