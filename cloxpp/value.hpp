@@ -14,9 +14,10 @@
 #include <variant>
 #include <memory>
 
-class Function;
+class FunctionObject;
+using Function = std::shared_ptr<FunctionObject>;
 
-using Value = std::variant<double, bool, std::monostate, std::string, std::shared_ptr<Function>>;
+using Value = std::variant<double, bool, std::monostate, std::string, Function>;
 
 class Chunk {
     std::vector<uint8_t> code;
@@ -36,21 +37,23 @@ public:
     int count() { return static_cast<int>(code.size()); }
 };
 
-class Function {
+class FunctionObject {
 private:
     int arity;
     std::string name;
     Chunk chunk;
 
 public:
-    Function(int arity, const std::string& name):
-        arity(arity), name(name), chunk(Chunk()) {}
+    FunctionObject(int arity, const std::string& name)
+        : arity(arity), name(name), chunk(Chunk()) {}
     
     const std::string& getName() const { return name; }
 
     bool operator==(const Function& rhs) const { return false; }
     
     Chunk& getChunk() { return chunk; }
+    uint8_t getCode(int offset) { return chunk.getCode(offset); }
+    const Value& getConstant(int constant) const { return chunk.getConstant(constant); }
 };
 
 struct OutputVisitor {
@@ -58,7 +61,7 @@ struct OutputVisitor {
     void operator()(const bool b) const { std::cout << (b ? "true" : "false"); }
     void operator()(const std::monostate n) const { std::cout << "nil"; }
     void operator()(const std::string& s) const { std::cout << s; }
-    void operator()(const std::shared_ptr<Function> f) const {
+    void operator()(const Function& f) const {
         if (f->getName().empty()) {
             std::cout << "<script>";
         } else {
@@ -77,7 +80,7 @@ struct FalsinessVisitor {
     bool operator()(const bool b) const { return !b; }
     bool operator()(const std::monostate n) const { return true; }
     bool operator()(const std::string& s) const { return false; }
-    bool operator()(const std::shared_ptr<Function>& f) const { return false; }
+    bool operator()(const Function& f) const { return false; }
 };
 
 inline bool isFalsy(const Value& v) {

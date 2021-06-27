@@ -10,14 +10,18 @@
 
 InterpretResult VM::interpret(const std::string& source) {
     auto parser = Parser(source);
+    auto opt = parser.compile();
+    if (!opt) { return InterpretResult::COMPILE_ERROR; }
+
+    auto& function = *opt;
+    push(function);
     
-    if (!parser.compile()) {
-        return InterpretResult::COMPILE_ERROR;
-    }
-    
-    chunk = parser.currentChunk();
-    ip = 0;
-    
+    auto frame = CallFrame();
+    frame.ip = 0;
+    frame.function = function;
+    frame.stackOffset = stack.size();
+    frames.emplace_back(frame);
+
     return run();
 }
 
@@ -28,7 +32,8 @@ void VM::runtimeError(const char* format, ...) {
     va_end(args);
     std::cerr << std::endl;
     
-    std::cerr << "[line " << chunk.getLine(ip) << "] in script" << std::endl;
+    auto& frame = frames.back();
+    std::cerr << "[line " << frame.function->getChunk().getLine(frame.ip) << "] in script" << std::endl;
     resetStack();
 }
 
@@ -56,17 +61,19 @@ void VM::popTwoAndPush(Value v) {
 }
 
 InterpretResult VM::run() {
-    auto readByte = [this]() -> uint8_t {
-        return this->chunk.getCode(this->ip++);
+    auto& frame = frames.back();
+    
+    auto readByte = [this, &frame]() -> uint8_t {
+        return frame.function->getCode(frame.ip++);
     };
     
-    auto readConstant = [this, readByte]() -> const Value& {
-        return this->chunk.getConstant(readByte());
+    auto readConstant = [this, readByte, &frame]() -> const Value& {
+        return frame.function->getConstant(readByte());
     };
     
-    auto readShort = [this]() -> uint16_t {
-        this->ip += 2;
-        return ((this->chunk.getCode(this->ip - 2) << 8) | (this->chunk.getCode(this->ip - 1)));
+    auto readShort = [this, &frame]() -> uint16_t {
+        frame.ip += 2;
+        return ((frame.function->getCode(frame.ip - 2) << 8) | (frame.function->getCode(frame.ip - 1)));
     };
     
     auto readString = [this, readConstant]() -> const std::string& {
@@ -81,7 +88,7 @@ InterpretResult VM::run() {
         }
         std::cout << std::endl;
         
-        chunk.disassembleInstruction(ip);
+        frame.function->getChunk().disassembleInstruction(frame.ip);
 #endif
 
 #define BINARY_OP(op) \
@@ -105,7 +112,7 @@ InterpretResult VM::run() {
                 
             case OpCode::GET_LOCAL: {
                 uint8_t slot = readByte();
-                push(stack[slot]);
+                push(stack[frame.stackOffset + slot]);
                 break;
             }
                 
@@ -198,20 +205,20 @@ InterpretResult VM::run() {
             
             case OpCode::JUMP: {
                 auto offset = readShort();
-                this->ip += offset;
+                frame.ip += offset;
                 break;
             }
                 
             case OpCode::LOOP: {
                 auto offset = readShort();
-                this->ip -= offset;
+                frame.ip -= offset;
                 break;
             }
                 
             case OpCode::JUMP_IF_FALSE: {
                 auto offset = readShort();
                 if (isFalsy(peek(0))) {
-                    this->ip += offset;
+                    frame.ip += offset;
                 }
                 break;
             }

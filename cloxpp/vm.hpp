@@ -19,13 +19,18 @@ enum class InterpretResult {
     RUNTIME_ERROR
 };
 
-class VM {
-    Chunk& chunk;
+struct CallFrame {
+    Function function;
     unsigned ip;
+    unsigned long stackOffset;
+};
+
+class VM {
     std::vector<Value> stack;
+    std::vector<CallFrame> frames;
     std::unordered_map<std::string, Value> globals;
     
-    inline void resetStack() { stack.clear(); }
+    inline void resetStack() { stack.clear(); frames.clear(); }
     
     void runtimeError(const char* format, ...);
     template <typename F>
@@ -41,7 +46,6 @@ class VM {
     inline Value const& peek(int distance) { return stack[stack.size() - 1 - distance]; }
     
 public:
-    VM(Chunk& c): chunk(c), ip(0), stack(std::vector<Value>()) {};
     InterpretResult interpret(const std::string& source);
     InterpretResult run();
 };

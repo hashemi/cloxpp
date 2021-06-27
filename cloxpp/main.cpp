@@ -52,8 +52,7 @@ static void runFile(VM& vm, const std::string& path) {
 }
 
 int main(int argc, const char * argv[]) {
-    auto c = Chunk();
-    auto vm = VM(c);
+    auto vm = VM();
     
     if (argc == 1) {
         repl(vm);

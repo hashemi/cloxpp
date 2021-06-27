@@ -71,12 +71,17 @@ Parser::Parser(const std::string& source) :
     advance();
 }
 
-bool Parser::compile() {
+std::optional<Function> Parser::compile() {
     while (!match(TokenType::_EOF)) {
         declaration();
     }
-    endCompiler();
-    return !hadError;
+    auto function = endCompiler();
+    
+    if (hadError) {
+        return std::nullopt;
+    } else {
+        return std::make_optional(function);
+    }
 }
 
 void Parser::advance() {
@@ -174,15 +179,19 @@ void Parser::patchJump(int offset) {
     currentChunk().setCode(offset + 1, jump & 0xff);
 }
 
-void Parser::endCompiler() {
+Function Parser::endCompiler() {
     emitReturn();
+    
+    auto function = compiler.function;
     
 #ifdef DEBUG_PRINT_CODE
     if (!hadError) {
-        auto name = compiler.function.getName().empty() ? "<script>" : compiler.function.getName();
+        auto name = function->getName().empty() ? "<script>" : function->getName();
         currentChunk().disassemble(name);
     }
 #endif
+
+    return function;
 }
 
 void Parser::binary(bool canAssign) {

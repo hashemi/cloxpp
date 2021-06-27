@@ -12,6 +12,8 @@
 #include "scanner.hpp"
 #include "value.hpp"
 #include <iostream>
+#include <memory>
+#include <optional>
 
 enum class Precedence {
     NONE,
@@ -58,7 +60,10 @@ class Compiler {
     Parser* parser;
 
 public:
-    explicit Compiler(Parser* parser, FunctionType type): parser(parser), type(type), function(Function(0, "")) {};
+    explicit Compiler(Parser* parser, FunctionType type)
+        : parser(parser), type(type), function(std::make_shared<FunctionObject>(0, "")) {
+            locals.emplace_back(Local("", 0));
+        };
     void addLocal(const std::string& name);
     void declareVariable(const std::string& name);
     void markInitialized();
@@ -95,7 +100,7 @@ class Parser {
     void emitConstant(Value value);
     void patchJump(int offset);
     
-    void endCompiler();
+    Function endCompiler();
     
     void binary(bool canAssign);
     void literal(bool canAssign);
@@ -138,8 +143,8 @@ class Parser {
     
 public:
     Parser(const std::string& source);
-    Chunk& currentChunk() { return compiler.function.getChunk(); }
-    bool compile();
+    Chunk& currentChunk() { return compiler.function->getChunk(); }
+    std::optional<Function> compile();
 };
 
 #endif /* compiler_hpp */
