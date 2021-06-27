@@ -62,7 +62,7 @@ InterpretResult VM::run() {
         return this->chunk.getCode(this->ip++);
     };
     
-    auto readConstant = [this, readByte]() -> Value {
+    auto readConstant = [this, readByte]() -> const Value& {
         return this->chunk.getConstant(readByte());
     };
     
