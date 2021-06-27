@@ -14,26 +14,9 @@
 #include <variant>
 #include <memory>
 
-class Chunk;
+class Function;
 
-class Function {
-private:
-    int arity;
-    std::string name;
-    std::shared_ptr<Chunk> chunk;
-
-public:
-    Function(int arity, const std::string& name):
-        arity(arity), name(name), chunk(std::make_shared<Chunk>()) {}
-    
-    const std::string& getName() const { return name; }
-
-    bool operator==(const Function& rhs) const { return false; }
-    
-    Chunk& getChunk() { return *chunk; }
-};
-
-using Value = std::variant<double, bool, std::monostate, std::string, Function>;
+using Value = std::variant<double, bool, std::monostate, std::string, std::shared_ptr<Function>>;
 
 class Chunk {
     std::vector<uint8_t> code;
@@ -53,16 +36,33 @@ public:
     int count() { return static_cast<int>(code.size()); }
 };
 
+class Function {
+private:
+    int arity;
+    std::string name;
+    Chunk chunk;
+
+public:
+    Function(int arity, const std::string& name):
+        arity(arity), name(name), chunk(Chunk()) {}
+    
+    const std::string& getName() const { return name; }
+
+    bool operator==(const Function& rhs) const { return false; }
+    
+    Chunk& getChunk() { return chunk; }
+};
+
 struct OutputVisitor {
     void operator()(const double d) const { std::cout << d; }
     void operator()(const bool b) const { std::cout << (b ? "true" : "false"); }
     void operator()(const std::monostate n) const { std::cout << "nil"; }
     void operator()(const std::string& s) const { std::cout << s; }
-    void operator()(const Function& f) const {
-        if (f.getName().empty()) {
+    void operator()(const std::shared_ptr<Function> f) const {
+        if (f->getName().empty()) {
             std::cout << "<script>";
         } else {
-            std::cout << "<fn " << f.getName() << ">";
+            std::cout << "<fn " << f->getName() << ">";
         }
     }
 };
@@ -77,7 +77,7 @@ struct FalsinessVisitor {
     bool operator()(const bool b) const { return !b; }
     bool operator()(const std::monostate n) const { return true; }
     bool operator()(const std::string& s) const { return false; }
-    bool operator()(const Function& f) const { return false; }
+    bool operator()(const std::shared_ptr<Function>& f) const { return false; }
 };
 
 inline bool isFalsy(const Value& v) {
