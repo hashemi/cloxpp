@@ -9,15 +9,13 @@
 #include "vm.hpp"
 
 InterpretResult VM::interpret(const std::string& source) {
-    // create a new chunk
-    auto newChunk = Chunk();
-    auto parser = Parser(source, newChunk);
+    auto parser = Parser(source);
     
     if (!parser.compile()) {
         return InterpretResult::COMPILE_ERROR;
     }
     
-    chunk = newChunk;
+    chunk = parser.currentChunk();
     ip = 0;
     
     return run();

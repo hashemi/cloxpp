@@ -61,13 +61,12 @@ bool Compiler::isLocal() {
     return scopeDepth > 0;
 }
 
-Parser::Parser(const std::string& source, Chunk& chunk) :
+Parser::Parser(const std::string& source) :
     previous(Token(TokenType::_EOF, source, 0)),
     current(Token(TokenType::_EOF, source, 0)),
     scanner(Scanner(source)),
     hadError(false), panicMode(false),
-    compilingChunk(chunk),
-    compiler(this)
+    compiler(this, TYPE_SCRIPT)
 {
     advance();
 }

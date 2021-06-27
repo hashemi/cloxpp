@@ -16,7 +16,24 @@
 
 class Chunk;
 
-using Value = std::variant<double, bool, std::monostate, std::string>;
+class Function {
+private:
+    int arity;
+    std::string name;
+    std::shared_ptr<Chunk> chunk;
+
+public:
+    Function(int arity, const std::string& name):
+        arity(arity), name(name), chunk(std::make_shared<Chunk>()) {}
+    
+    const std::string& getName() const { return name; }
+
+    bool operator==(const Function& rhs) const { return false; }
+    
+    Chunk& getChunk() { return *chunk; }
+};
+
+using Value = std::variant<double, bool, std::monostate, std::string, Function>;
 
 class Chunk {
     std::vector<uint8_t> code;
@@ -41,6 +58,7 @@ struct OutputVisitor {
     void operator()(const bool b) const { std::cout << (b ? "true" : "false"); }
     void operator()(const std::monostate n) const { std::cout << "nil"; }
     void operator()(const std::string& s) const { std::cout << s; }
+    void operator()(const Function& f) const { std::cout << "<fn " << f.getName() << ">"; }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Value& v) {
@@ -53,6 +71,7 @@ struct FalsinessVisitor {
     bool operator()(const bool b) const { return !b; }
     bool operator()(const std::monostate n) const { return true; }
     bool operator()(const std::string& s) const { return false; }
+    bool operator()(const Function& f) const { return false; }
 };
 
 inline bool isFalsy(const Value& v) {

@@ -45,13 +45,20 @@ struct Local {
 
 class Parser;
 
+typedef enum {
+    TYPE_FUNCTION, TYPE_SCRIPT
+} FunctionType;
+
 class Compiler {
+    Function function;
+    FunctionType type;
+    
     std::vector<Local> locals;
     int scopeDepth = 0;
     Parser* parser;
 
 public:
-    explicit Compiler(Parser* parser): parser(parser) {};
+    explicit Compiler(Parser* parser, FunctionType type): parser(parser), type(type), function(Function(0, "")) {};
     void addLocal(const std::string& name);
     void declareVariable(const std::string& name);
     void markInitialized();
@@ -59,6 +66,7 @@ public:
     void beginScope();
     void endScope();
     bool isLocal();
+    Chunk& getChunk() { return function.getChunk(); }
 };
 
 class Parser {
@@ -69,8 +77,6 @@ class Parser {
     
     bool hadError;
     bool panicMode;
-    
-    Chunk& compilingChunk;
     
     void advance();
     void consume(TokenType type, const std::string& message);
@@ -117,10 +123,6 @@ class Parser {
     void whileStatement();
     void synchronize();
 
-    Chunk& currentChunk() {
-        return compilingChunk;
-    }
-    
     void errorAt(const Token& token, const std::string& message);
     
     void error(const std::string& message) {
@@ -134,7 +136,8 @@ class Parser {
     friend Compiler;
     
 public:
-    Parser(const std::string& source, Chunk& chunk);
+    Parser(const std::string& source);
+    Chunk& currentChunk() { return compiler.getChunk(); }
     bool compile();
 };
 
