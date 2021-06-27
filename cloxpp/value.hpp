@@ -58,7 +58,13 @@ struct OutputVisitor {
     void operator()(const bool b) const { std::cout << (b ? "true" : "false"); }
     void operator()(const std::monostate n) const { std::cout << "nil"; }
     void operator()(const std::string& s) const { std::cout << s; }
-    void operator()(const Function& f) const { std::cout << "<fn " << f.getName() << ">"; }
+    void operator()(const Function& f) const {
+        if (f.getName().empty()) {
+            std::cout << "<script>";
+        } else {
+            std::cout << "<fn " << f.getName() << ">";
+        }
+    }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Value& v) {

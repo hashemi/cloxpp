@@ -179,7 +179,8 @@ void Parser::endCompiler() {
     
 #ifdef DEBUG_PRINT_CODE
     if (!hadError) {
-        currentChunk().disassemble("code");
+        auto name = compiler.function.getName().empty() ? "<script>" : compiler.function.getName();
+        currentChunk().disassemble(name);
     }
 #endif
 }
