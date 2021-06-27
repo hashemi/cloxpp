@@ -66,7 +66,8 @@ public:
     void beginScope();
     void endScope();
     bool isLocal();
-    Chunk& getChunk() { return function.getChunk(); }
+
+    friend Parser;
 };
 
 class Parser {
@@ -137,7 +138,7 @@ class Parser {
     
 public:
     Parser(const std::string& source);
-    Chunk& currentChunk() { return compiler.getChunk(); }
+    Chunk& currentChunk() { return compiler.function.getChunk(); }
     bool compile();
 };
 
