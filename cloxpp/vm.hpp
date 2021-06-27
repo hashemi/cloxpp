@@ -38,7 +38,7 @@ class VM {
         stack.pop_back();
         return v;
     }
-    inline Value peek(int distance) { return stack[stack.size() - 1 - distance]; }
+    inline Value const& peek(int distance) { return stack[stack.size() - 1 - distance]; }
     
 public:
     VM(Chunk& c): chunk(c), ip(0), stack(std::vector<Value>()) {};
