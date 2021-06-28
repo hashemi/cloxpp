@@ -87,6 +87,10 @@ int Chunk::disassembleInstruction(int offset) {
             return byteInstruction("OP_SET_LOCAL", *this, offset);
         case OpCode::SET_GLOBAL:
             return constantInstruction("OP_SET_GLOBAL", *this, offset);
+        case OpCode::GET_UPVALUE:
+            return byteInstruction("OP_GET_UPVALUE", *this, offset);
+        case OpCode::SET_UPVALUE:
+            return byteInstruction("OP_SET_UPVALUE", *this, offset);
         case OpCode::EQUAL:
             return simpleInstruction("OP_EQUAL", offset);
         case OpCode::GREATER:
@@ -121,6 +125,15 @@ int Chunk::disassembleInstruction(int offset) {
             printf("%-16s %4d ", "OP_CLOSURE", constant);
             std::cout << constants[constant];
             std::cout << std::endl;
+            
+            auto function = std::get<Function>(constants[constant]);
+            for (int j = 0; j < function->upvalueCount; j++) {
+                int isLocal = code[offset++];
+                int index = code[offset++];
+                printf("%04d      |                     %s %d\n",
+                       offset - 2, isLocal ? "local" : "upvalue", index);
+            }
+            
             return offset;
         }
         case OpCode::RETURN:

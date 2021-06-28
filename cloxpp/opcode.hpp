@@ -22,6 +22,8 @@ enum class OpCode: uint8_t {
     DEFINE_GLOBAL,
     SET_LOCAL,
     SET_GLOBAL,
+    GET_UPVALUE,
+    SET_UPVALUE,
     EQUAL,
     GREATER,
     LESS,

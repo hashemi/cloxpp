@@ -31,6 +31,10 @@ bool VM::callValue(const Value& callee, int argCount) {
     }, callee);
 }
 
+UpvalueValue VM::captureUpvalue(Value* local) {
+    return std::make_shared<UpvalueObject>(local);
+}
+
 bool VM::call(Closure closure, int argCount) {
     if (argCount != closure->function->arity) {
         runtimeError("Expected %d arguments but got %d.",
@@ -202,7 +206,16 @@ InterpretResult VM::run() {
                 found->second = peek(0);
                 break;
             }
-
+            case OpCode::GET_UPVALUE: {
+                auto slot = readByte();
+                push(*frames.back().closure->upvalues[slot]->location);
+                break;
+            }
+            case OpCode::SET_UPVALUE: {
+                auto slot = readByte();
+                *frames.back().closure->upvalues[slot]->location = peek(0);
+                break;
+            }
             case OpCode::EQUAL: {
                 popTwoAndPush(peek(0) == peek(1));
                 break;
@@ -286,6 +299,15 @@ InterpretResult VM::run() {
                 auto function = std::get<Function>(readConstant());
                 auto closure = std::make_shared<ClosureObject>(function);
                 push(closure);
+                for (int i = 0; i < closure->upvalues.size(); i++) {
+                    auto isLocal = readByte();
+                    auto index = readByte();
+                    if (isLocal) {
+                        closure->upvalues[i] = captureUpvalue(&stack[frames.back().stackOffset + index]);
+                    } else {
+                        closure->upvalues[i] = frames.back().closure->upvalues[index];
+                    }
+                }
                 break;
             }
             

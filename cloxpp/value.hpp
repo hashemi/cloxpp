@@ -15,6 +15,7 @@
 #include <memory>
 
 struct NativeFunctionObject;
+struct UpvalueObject;
 class FunctionObject;
 class ClosureObject;
 class Compiler;
@@ -23,8 +24,9 @@ class VM;
 using Function = std::shared_ptr<FunctionObject>;
 using NativeFunction = std::shared_ptr<NativeFunctionObject>;
 using Closure = std::shared_ptr<ClosureObject>;
+using UpvalueValue = std::shared_ptr<UpvalueObject>;
 
-using Value = std::variant<double, bool, std::monostate, std::string, Function, NativeFunction, Closure>;
+using Value = std::variant<double, bool, std::monostate, std::string, Function, NativeFunction, Closure, UpvalueValue>;
 
 class Chunk {
     std::vector<uint8_t> code;
@@ -50,9 +52,15 @@ struct NativeFunctionObject {
     NativeFn function;
 };
 
+struct UpvalueObject {
+    Value* location;
+    UpvalueObject(Value* slot): location(slot) {}
+};
+
 class FunctionObject {
 private:
     int arity;
+    int upvalueCount = 0;
     std::string name;
     Chunk chunk;
 
@@ -71,12 +79,17 @@ public:
     friend Compiler;
     friend Parser;
     friend VM;
+    friend Chunk;
+    friend ClosureObject;
 };
 
 class ClosureObject {
 public:
     Function function;
-    explicit ClosureObject(Function function): function(function) {};
+    std::vector<UpvalueValue> upvalues;
+    explicit ClosureObject(Function function): function(function) {
+        upvalues.resize(function->upvalueCount, nullptr);
+    };
 };
 
 std::ostream& operator<<(std::ostream& os, const Value& v);
@@ -95,6 +108,7 @@ struct OutputVisitor {
     }
     void operator()(const NativeFunction& f) const { std::cout << "<native fn>"; }
     void operator()(const Closure& c) const { std::cout << Value(c->function); }
+    void operator()(const UpvalueValue& u) const { std::cout << "upvalue"; }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Value& v) {
@@ -110,6 +124,7 @@ struct FalsinessVisitor {
     bool operator()(const Function& f) const { return false; }
     bool operator()(const NativeFunction& f) const { return false; }
     bool operator()(const Closure& f) const { return false; }
+    bool operator()(const UpvalueValue& u) const { return false; }
 };
 
 inline bool isFalsy(const Value& v) {

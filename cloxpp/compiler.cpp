@@ -8,8 +8,8 @@
 
 #include "compiler.hpp"
 
-Compiler::Compiler(Parser* parser, FunctionType type)
-    : parser(parser), type(type), function(std::make_shared<FunctionObject>(0, "")) {
+Compiler::Compiler(Parser* parser, FunctionType type, std::unique_ptr<Compiler> enclosing)
+    : parser(parser), type(type), function(std::make_shared<FunctionObject>(0, "")), enclosing(std::move(enclosing)) {
         locals.emplace_back(Local("", 0));
         if (type != TYPE_SCRIPT) {
             function->name = parser->previous.text();
@@ -55,6 +55,40 @@ int Compiler::resolveLocal(const std::string& name) {
     return -1;
 }
 
+int Compiler::resolveUpvalue(const std::string& name) {
+    if (enclosing == NULL) return -1;
+    
+    int local = enclosing->resolveLocal(name);
+    if (local != -1) {
+        return addUpvalue(static_cast<uint8_t>(local), true);
+    }
+    
+    int upvalue = enclosing->resolveUpvalue(name);
+    if (upvalue != -1) {
+        return addUpvalue(static_cast<uint8_t>(local), false);
+    }
+    
+    return -1;
+}
+
+int Compiler::addUpvalue(uint8_t index, bool isLocal) {
+    for (auto i = 0; i < upvalues.size(); i++) {
+        if (upvalues[i].index == index && upvalues[i].isLocal == isLocal) {
+            return i;
+        }
+    }
+    
+    if (upvalues.size() == UINT8_COUNT) {
+        parser->error("Too many closure variables in function.");
+        return 0;
+    }
+
+    upvalues.emplace_back(Upvalue(isLocal, index));
+    auto upvalueCount = static_cast<int>(upvalues.size());
+    function->upvalueCount = upvalueCount;
+    return upvalueCount;
+}
+
 void Compiler::beginScope() { scopeDepth++; }
 
 void Compiler::endScope() {
@@ -73,9 +107,9 @@ Parser::Parser(const std::string& source) :
     previous(Token(TokenType::_EOF, source, 0)),
     current(Token(TokenType::_EOF, source, 0)),
     scanner(Scanner(source)),
-    hadError(false), panicMode(false),
-    compiler(this, TYPE_SCRIPT)
+    hadError(false), panicMode(false)
 {
+    compiler = std::make_unique<Compiler>(this, TYPE_SCRIPT, nullptr);
     advance();
 }
 
@@ -191,7 +225,7 @@ void Parser::patchJump(int offset) {
 Function Parser::endCompiler() {
     emitReturn();
     
-    auto function = compiler.function;
+    auto function = compiler->function;
     
 #ifdef DEBUG_PRINT_CODE
     if (!hadError) {
@@ -273,10 +307,13 @@ void Parser::string(bool canAssign) {
 
 void Parser::namedVariable(const std::string& name, bool canAssign) {
     OpCode getOp, setOp;
-    auto arg = compiler.resolveLocal(name);
+    auto arg = compiler->resolveLocal(name);
     if (arg != -1) {
         getOp = OpCode::GET_LOCAL;
         setOp = OpCode::SET_LOCAL;
+    } else if ((arg = compiler->resolveUpvalue(name)) != -1) {
+        getOp = OpCode::GET_UPVALUE;
+        setOp = OpCode::SET_UPVALUE;
     } else {
         arg = identifierConstant(name);
         getOp = OpCode::GET_GLOBAL;
@@ -408,15 +445,15 @@ int Parser::identifierConstant(const std::string& name) {
 uint8_t Parser::parseVariable(const std::string& errorMessage) {
     consume(TokenType::IDENTIFIER, errorMessage);
     
-    compiler.declareVariable(std::string(previous.text()));
-    if (compiler.isLocal()) return 0;
+    compiler->declareVariable(std::string(previous.text()));
+    if (compiler->isLocal()) return 0;
     
     return identifierConstant(std::string(previous.text()));
 }
 
 void Parser::defineVariable(uint8_t global) {
-    if (compiler.isLocal()) {
-        compiler.markInitialized();
+    if (compiler->isLocal()) {
+        compiler->markInitialized();
         return;
     }
     
@@ -451,15 +488,14 @@ void Parser::block() {
 }
 
 void Parser::function(FunctionType type) {
-    auto enclosingCompiler = compiler;
-    compiler = Compiler(this, type);
-    compiler.beginScope();
+    compiler = std::make_unique<Compiler>(this, type, std::move(compiler));
+    compiler->beginScope();
 
     consume(TokenType::LEFT_PAREN, "Expect '(' after function name.");
     if (!check(TokenType::RIGHT_PAREN)) {
         do {
-            compiler.function->arity++;
-            if (compiler.function->arity > 255) {
+            compiler->function->arity++;
+            if (compiler->function->arity > 255) {
                 errorAtCurrent("Can't have more than 255 parameters.");
             }
             auto constant = parseVariable("Expect parameter name.");
@@ -471,13 +507,18 @@ void Parser::function(FunctionType type) {
     block();
     
     auto function = endCompiler();
-    compiler = enclosingCompiler;
+    compiler = std::move(compiler->enclosing);
     emit(OpCode::CLOSURE, makeConstant(function));
+    
+    for (const auto& upvalue : compiler->upvalues) {
+        emit(upvalue.isLocal ? 1 : 0);
+        emit(upvalue.index);
+    }
 }
 
 void Parser::funDeclaration() {
     auto global = parseVariable("Expect function name.");
-    compiler.markInitialized();
+    compiler->markInitialized();
     function(TYPE_FUNCTION);
     defineVariable(global);
 }
@@ -502,7 +543,7 @@ void Parser::expressionStatement() {
 }
 
 void Parser::forStatement() {
-    compiler.beginScope();
+    compiler->beginScope();
     
     consume(TokenType::LEFT_PAREN, "Expect '(' after 'for'.");
     if (match(TokenType::VAR)) {
@@ -547,7 +588,7 @@ void Parser::forStatement() {
         emit(OpCode::POP); // Condition.
     }
 
-    compiler.endScope();
+    compiler->endScope();
 }
 
 void Parser::ifStatement() {
@@ -590,9 +631,9 @@ void Parser::statement() {
     } else if (match(TokenType::WHILE)) {
         whileStatement();
     } else if (match(TokenType::LEFT_BRACE)) {
-        compiler.beginScope();
+        compiler->beginScope();
         block();
-        compiler.endScope();
+        compiler->endScope();
     } else {
         expressionStatement();
     }
@@ -605,7 +646,7 @@ void Parser::printStatement() {
 }
 
 void Parser::returnStatement() {
-    if (compiler.type == TYPE_SCRIPT) {
+    if (compiler->type == TYPE_SCRIPT) {
         error("Can't return from top-level code.");
     }
     

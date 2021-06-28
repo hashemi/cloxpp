@@ -45,6 +45,14 @@ struct Local {
     Local(std::string name, int depth): name(name), depth(depth) {};
 };
 
+class Upvalue {
+public:
+    uint8_t index;
+    bool isLocal;
+    explicit Upvalue(uint8_t index, bool isLocal)
+        : index(index), isLocal(isLocal) {}
+};
+
 class Parser;
 
 typedef enum {
@@ -54,17 +62,21 @@ typedef enum {
 class Compiler {
     Function function;
     FunctionType type;
+    std::unique_ptr<Compiler> enclosing;
     
     std::vector<Local> locals;
+    std::vector<Upvalue> upvalues;
     int scopeDepth = 0;
     Parser* parser;
 
 public:
-    explicit Compiler(Parser* parser, FunctionType type);
+    explicit Compiler(Parser* parser, FunctionType type, std::unique_ptr<Compiler> enclosing);
     void addLocal(const std::string& name);
     void declareVariable(const std::string& name);
     void markInitialized();
     int resolveLocal(const std::string& name);
+    int resolveUpvalue(const std::string& name);
+    int addUpvalue(uint8_t index, bool isLocal);
     void beginScope();
     void endScope();
     bool isLocal();
@@ -76,7 +88,7 @@ class Parser {
     Token current;
     Token previous;
     Scanner scanner;
-    Compiler compiler;
+    std::unique_ptr<Compiler> compiler;
     
     bool hadError;
     bool panicMode;
@@ -145,7 +157,7 @@ class Parser {
     
 public:
     Parser(const std::string& source);
-    Chunk& currentChunk() { return compiler.function->getChunk(); }
+    Chunk& currentChunk() { return compiler->function->getChunk(); }
     std::optional<Function> compile();
 };
 

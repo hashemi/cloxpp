@@ -50,6 +50,7 @@ class VM {
     }
     inline Value const& peek(int distance) { return stack[stack.size() - 1 - distance]; }
     bool callValue(const Value& callee, int argCount);
+    UpvalueValue captureUpvalue(Value* local);
     bool call(Closure closure, int argCount);
     
 public:
