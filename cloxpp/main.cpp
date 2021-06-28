@@ -51,6 +51,10 @@ static void runFile(VM& vm, const std::string& path) {
     }
 }
 
+static void runCommand(VM& vm, const std::string& command) {
+    vm.interpret(command);
+}
+
 int main(int argc, const char * argv[]) {
     auto vm = VM();
     
@@ -58,6 +62,8 @@ int main(int argc, const char * argv[]) {
         repl(vm);
     } else if (argc == 2) {
         runFile(vm, argv[1]);
+    } else if (argc == 3 && strcmp(argv[1], "-c") == 0) {
+        runCommand(vm, argv[2]);
     } else {
         std::cerr << "Usage: cloxpp [path]" << std::endl;
         exit(64);
