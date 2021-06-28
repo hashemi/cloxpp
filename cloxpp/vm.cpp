@@ -27,16 +27,16 @@ bool VM::call(Function function, int argCount) {
         return false;
     }
     
+    if (frames.size() + 1 == FRAMES_MAX) {
+        runtimeError("Stack overflow.");
+        return false;
+    }
+
     frames.emplace_back(CallFrame());
     auto& frame = frames.back();
     frame.ip = 0;
     frame.function = function;
     frame.stackOffset = stack.size() - argCount - 1;
-    
-    if (frames.size() == FRAMES_MAX) {
-        runtimeError("Stack overflow.");
-        return false;
-    }
     
     return true;
 }
