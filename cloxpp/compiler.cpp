@@ -30,7 +30,7 @@ void Compiler::declareVariable(const std::string& name) {
     for (long i = locals.size() - 1; i >= 0; i--) {
         if (locals[i].depth != -1 && locals[i].depth < scopeDepth) break;
         if (locals[i].name == name) {
-            parser->error("Variable with this name already declared in this scope.");
+            parser->error("Already a variable with this name in this scope.");
         }
     }
     
@@ -46,7 +46,7 @@ int Compiler::resolveLocal(const std::string& name) {
     for (long i = locals.size() - 1; i >=0; i--) {
         if (locals[i].name == name) {
             if (locals[i].depth == -1) {
-                parser->error("Cannot read local variable in its own initializer.");
+                parser->error("Can't read local variable in its own initializer.");
             }
             return static_cast<int>(i);
         }
