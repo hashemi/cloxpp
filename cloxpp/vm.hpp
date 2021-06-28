@@ -25,6 +25,10 @@ struct CallFrame {
     unsigned long stackOffset;
 };
 
+static Value clockNative(int argCount, std::vector<Value>::iterator args) {
+    return (double)clock() / CLOCKS_PER_SEC;
+}
+
 class VM {
     std::vector<Value> stack;
     std::vector<CallFrame> frames;
@@ -33,6 +37,7 @@ class VM {
     inline void resetStack() { stack.clear(); frames.clear(); }
     
     void runtimeError(const char* format, ...);
+    void defineNative(const std::string& name, NativeFn function);
     template <typename F>
     bool binaryOp(F op);
     void popTwoAndPush(Value v);
@@ -48,6 +53,9 @@ class VM {
     bool call(Function function, int argCount);
     
 public:
+    explicit VM() {
+        defineNative("clock", clockNative);
+    }
     InterpretResult interpret(const std::string& source);
     InterpretResult run();
 };

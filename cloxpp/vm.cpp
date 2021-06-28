@@ -10,14 +10,25 @@
 
 #define FRAMES_MAX 64
 
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
 bool VM::callValue(const Value& callee, int argCount) {
-    try {
-        auto& function = std::get<Function>(callee);
-        return call(function, argCount);
-    } catch (std::bad_variant_access&) {
-        runtimeError("Can only call functions and classes.");
-        return false;
-    }
+    return std::visit(overloaded {
+        [this, argCount](Function function) -> bool {
+            return call(function, argCount);
+        },
+        [this, argCount](NativeFunction native) -> bool {
+            auto result = native->function(argCount, stack.end() - argCount);
+            stack.resize(stack.size() - argCount - 1);
+            push(result);
+            return true;
+        },
+        [this](auto v) -> bool {
+            this->runtimeError("Can only call functions and classes.");
+            return false;
+        }
+    }, callee);
 }
 
 bool VM::call(Function function, int argCount) {
@@ -75,6 +86,12 @@ void VM::runtimeError(const char* format, ...) {
     resetStack();
 }
 
+void VM::defineNative(const std::string& name, NativeFn function) {
+    auto obj = std::make_shared<NativeFunctionObject>();
+    obj->function = function;
+    globals[name] = obj;
+}
+
 template <typename F>
 bool VM::binaryOp(F op) {
     try {
@@ -88,9 +105,6 @@ bool VM::binaryOp(F op) {
         return false;
     }
 }
-
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 void VM::popTwoAndPush(Value v) {
     pop();

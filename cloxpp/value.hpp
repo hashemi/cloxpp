@@ -14,13 +14,15 @@
 #include <variant>
 #include <memory>
 
+struct NativeFunctionObject;
 class FunctionObject;
 class Compiler;
 class Parser;
 class VM;
 using Function = std::shared_ptr<FunctionObject>;
+using NativeFunction = std::shared_ptr<NativeFunctionObject>;
 
-using Value = std::variant<double, bool, std::monostate, std::string, Function>;
+using Value = std::variant<double, bool, std::monostate, std::string, Function, NativeFunction>;
 
 class Chunk {
     std::vector<uint8_t> code;
@@ -38,6 +40,12 @@ public:
     void disassemble(const std::string& name);
     int getLine(int instruction) { return lines[instruction]; }
     int count() { return static_cast<int>(code.size()); }
+};
+
+typedef Value (*NativeFn)(int argCount, std::vector<Value>::iterator args);
+
+struct NativeFunctionObject {
+    NativeFn function;
 };
 
 class FunctionObject {
@@ -75,6 +83,7 @@ struct OutputVisitor {
             std::cout << "<fn " << f->getName() << ">";
         }
     }
+    void operator()(const NativeFunction& f) const { std::cout << "<native fn>"; }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Value& v) {
@@ -88,6 +97,7 @@ struct FalsinessVisitor {
     bool operator()(const std::monostate n) const { return true; }
     bool operator()(const std::string& s) const { return false; }
     bool operator()(const Function& f) const { return false; }
+    bool operator()(const NativeFunction& f) const { return false; }
 };
 
 inline bool isFalsy(const Value& v) {
