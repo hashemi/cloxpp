@@ -115,6 +115,14 @@ int Chunk::disassembleInstruction(int offset) {
             return jumpInstruction("OP_JUMP", -1, *this, offset);
         case OpCode::CALL:
             return byteInstruction("OP_LOOP", *this, offset);
+        case OpCode::CLOSURE: {
+            offset++;
+            auto constant = code[offset++];
+            printf("%-16s %4d ", "OP_CLOSURE", constant);
+            std::cout << constants[constant];
+            std::cout << std::endl;
+            return offset;
+        }
         case OpCode::RETURN:
             return simpleInstruction("OP_RETURN", offset);
     }

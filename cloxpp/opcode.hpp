@@ -36,6 +36,7 @@ enum class OpCode: uint8_t {
     JUMP_IF_FALSE,
     LOOP,
     CALL,
+    CLOSURE,
     RETURN,
 };
 

@@ -16,13 +16,15 @@
 
 struct NativeFunctionObject;
 class FunctionObject;
+class ClosureObject;
 class Compiler;
 class Parser;
 class VM;
 using Function = std::shared_ptr<FunctionObject>;
 using NativeFunction = std::shared_ptr<NativeFunctionObject>;
+using Closure = std::shared_ptr<ClosureObject>;
 
-using Value = std::variant<double, bool, std::monostate, std::string, Function, NativeFunction>;
+using Value = std::variant<double, bool, std::monostate, std::string, Function, NativeFunction, Closure>;
 
 class Chunk {
     std::vector<uint8_t> code;
@@ -71,6 +73,14 @@ public:
     friend VM;
 };
 
+class ClosureObject {
+public:
+    Function function;
+    explicit ClosureObject(Function function): function(function) {};
+};
+
+std::ostream& operator<<(std::ostream& os, const Value& v);
+
 struct OutputVisitor {
     void operator()(const double d) const { std::cout << d; }
     void operator()(const bool b) const { std::cout << (b ? "true" : "false"); }
@@ -84,6 +94,7 @@ struct OutputVisitor {
         }
     }
     void operator()(const NativeFunction& f) const { std::cout << "<native fn>"; }
+    void operator()(const Closure& c) const { std::cout << Value(c->function); }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Value& v) {
@@ -98,6 +109,7 @@ struct FalsinessVisitor {
     bool operator()(const std::string& s) const { return false; }
     bool operator()(const Function& f) const { return false; }
     bool operator()(const NativeFunction& f) const { return false; }
+    bool operator()(const Closure& f) const { return false; }
 };
 
 inline bool isFalsy(const Value& v) {

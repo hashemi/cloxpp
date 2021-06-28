@@ -472,7 +472,7 @@ void Parser::function(FunctionType type) {
     
     auto function = endCompiler();
     compiler = enclosingCompiler;
-    emit(OpCode::CONSTANT, makeConstant(function));
+    emit(OpCode::CLOSURE, makeConstant(function));
 }
 
 void Parser::funDeclaration() {

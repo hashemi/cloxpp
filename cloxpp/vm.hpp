@@ -20,7 +20,7 @@ enum class InterpretResult {
 };
 
 struct CallFrame {
-    Function function;
+    Closure closure;
     unsigned ip;
     unsigned long stackOffset;
 };
@@ -50,7 +50,7 @@ class VM {
     }
     inline Value const& peek(int distance) { return stack[stack.size() - 1 - distance]; }
     bool callValue(const Value& callee, int argCount);
-    bool call(Function function, int argCount);
+    bool call(Closure closure, int argCount);
     
 public:
     explicit VM() {

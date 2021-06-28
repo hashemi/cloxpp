@@ -15,8 +15,8 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 bool VM::callValue(const Value& callee, int argCount) {
     return std::visit(overloaded {
-        [this, argCount](Function function) -> bool {
-            return call(function, argCount);
+        [this, argCount](Closure closure) -> bool {
+            return call(closure, argCount);
         },
         [this, argCount](NativeFunction native) -> bool {
             auto result = native->function(argCount, stack.end() - argCount);
@@ -31,10 +31,10 @@ bool VM::callValue(const Value& callee, int argCount) {
     }, callee);
 }
 
-bool VM::call(Function function, int argCount) {
-    if (argCount != function->arity) {
+bool VM::call(Closure closure, int argCount) {
+    if (argCount != closure->function->arity) {
         runtimeError("Expected %d arguments but got %d.",
-                     function->arity, argCount);
+                     closure->function->arity, argCount);
         return false;
     }
     
@@ -46,7 +46,7 @@ bool VM::call(Function function, int argCount) {
     frames.emplace_back(CallFrame());
     auto& frame = frames.back();
     frame.ip = 0;
-    frame.function = function;
+    frame.closure = closure;
     frame.stackOffset = stack.size() - argCount - 1;
     
     return true;
@@ -58,8 +58,9 @@ InterpretResult VM::interpret(const std::string& source) {
     if (!opt) { return InterpretResult::COMPILE_ERROR; }
 
     auto& function = *opt;
-    push(function);
-    call(function, 0);
+    auto closure = std::make_shared<ClosureObject>(function);
+    push(closure);
+    call(closure, 0);
 
     return run();
 }
@@ -73,7 +74,7 @@ void VM::runtimeError(const char* format, ...) {
     
     for (auto i = frames.size(); i-- > 0; ) {
         auto& frame = frames[i];
-        auto function = frame.function;
+        auto function = frame.closure->function;
         auto line = function->getChunk().getLine(frame.ip);
         std::cerr << "[line " << line << "] in ";
         if (function->name.empty()) {
@@ -114,16 +115,16 @@ void VM::popTwoAndPush(Value v) {
 
 InterpretResult VM::run() {
     auto readByte = [this]() -> uint8_t {
-        return this->frames.back().function->getCode(this->frames.back().ip++);
+        return this->frames.back().closure->function->getCode(this->frames.back().ip++);
     };
     
     auto readConstant = [this, readByte]() -> const Value& {
-        return this->frames.back().function->getConstant(readByte());
+        return this->frames.back().closure->function->getConstant(readByte());
     };
     
     auto readShort = [this]() -> uint16_t {
         this->frames.back().ip += 2;
-        return ((this->frames.back().function->getCode(this->frames.back().ip - 2) << 8) | (this->frames.back().function->getCode(this->frames.back().ip - 1)));
+        return ((this->frames.back().closure->function->getCode(this->frames.back().ip - 2) << 8) | (this->frames.back().closure->function->getCode(this->frames.back().ip - 1)));
     };
     
     auto readString = [this, readConstant]() -> const std::string& {
@@ -138,7 +139,7 @@ InterpretResult VM::run() {
         }
         std::cout << std::endl;
         
-        frames.back().function->getChunk().disassembleInstruction(frames.back().ip);
+        frames.back().closure->function->getChunk().disassembleInstruction(frames.back().ip);
 #endif
 
 #define BINARY_OP(op) \
@@ -278,6 +279,13 @@ InterpretResult VM::run() {
                 if (!callValue(peek(argCount), argCount)) {
                     return InterpretResult::RUNTIME_ERROR;
                 }
+                break;
+            }
+                
+            case OpCode::CLOSURE: {
+                auto function = std::get<Function>(readConstant());
+                auto closure = std::make_shared<ClosureObject>(function);
+                push(closure);
                 break;
             }
             
