@@ -44,6 +44,8 @@ class VM {
         return v;
     }
     inline Value const& peek(int distance) { return stack[stack.size() - 1 - distance]; }
+    bool callValue(const Value& callee, int argCount);
+    bool call(Function function, int argCount);
     
 public:
     InterpretResult interpret(const std::string& source);

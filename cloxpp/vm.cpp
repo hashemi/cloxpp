@@ -8,6 +8,39 @@
 
 #include "vm.hpp"
 
+#define FRAMES_MAX 64
+
+bool VM::callValue(const Value& callee, int argCount) {
+    try {
+        auto& function = std::get<Function>(callee);
+        return call(function, argCount);
+    } catch (std::bad_variant_access&) {
+        runtimeError("Can only call functions and classes.");
+        return false;
+    }
+}
+
+bool VM::call(Function function, int argCount) {
+    if (argCount != function->arity) {
+        runtimeError("Expected %d arguments but got %d.",
+                     function->arity, argCount);
+        return false;
+    }
+    
+    frames.emplace_back(CallFrame());
+    auto& frame = frames.back();
+    frame.ip = 0;
+    frame.function = function;
+    frame.stackOffset = stack.size() - argCount - 1;
+    
+    if (frames.size() == FRAMES_MAX) {
+        runtimeError("Stack overflow.");
+        return false;
+    }
+    
+    return true;
+}
+
 InterpretResult VM::interpret(const std::string& source) {
     auto parser = Parser(source);
     auto opt = parser.compile();
@@ -15,12 +48,7 @@ InterpretResult VM::interpret(const std::string& source) {
 
     auto& function = *opt;
     push(function);
-    
-    auto frame = CallFrame();
-    frame.ip = 0;
-    frame.function = function;
-    frame.stackOffset = stack.size();
-    frames.emplace_back(frame);
+    call(function, 0);
 
     return run();
 }
@@ -32,8 +60,18 @@ void VM::runtimeError(const char* format, ...) {
     va_end(args);
     std::cerr << std::endl;
     
-    auto& frame = frames.back();
-    std::cerr << "[line " << frame.function->getChunk().getLine(frame.ip) << "] in script" << std::endl;
+    for (auto i = frames.size(); i-- > 0; ) {
+        auto& frame = frames[i];
+        auto function = frame.function;
+        auto line = function->getChunk().getLine(frame.ip);
+        std::cerr << "[line " << line << "] in ";
+        if (function->name.empty()) {
+            std::cerr << "script" << std::endl;
+        } else {
+            std::cerr << function->name << "()" << std::endl;
+        }
+    }
+
     resetStack();
 }
 
@@ -61,19 +99,17 @@ void VM::popTwoAndPush(Value v) {
 }
 
 InterpretResult VM::run() {
-    auto& frame = frames.back();
-    
-    auto readByte = [this, &frame]() -> uint8_t {
-        return frame.function->getCode(frame.ip++);
+    auto readByte = [this]() -> uint8_t {
+        return this->frames.back().function->getCode(this->frames.back().ip++);
     };
     
-    auto readConstant = [this, readByte, &frame]() -> const Value& {
-        return frame.function->getConstant(readByte());
+    auto readConstant = [this, readByte]() -> const Value& {
+        return this->frames.back().function->getConstant(readByte());
     };
     
-    auto readShort = [this, &frame]() -> uint16_t {
-        frame.ip += 2;
-        return ((frame.function->getCode(frame.ip - 2) << 8) | (frame.function->getCode(frame.ip - 1)));
+    auto readShort = [this]() -> uint16_t {
+        this->frames.back().ip += 2;
+        return ((this->frames.back().function->getCode(this->frames.back().ip - 2) << 8) | (this->frames.back().function->getCode(this->frames.back().ip - 1)));
     };
     
     auto readString = [this, readConstant]() -> const std::string& {
@@ -88,7 +124,7 @@ InterpretResult VM::run() {
         }
         std::cout << std::endl;
         
-        frame.function->getChunk().disassembleInstruction(frame.ip);
+        frames.back().function->getChunk().disassembleInstruction(frames.back().ip);
 #endif
 
 #define BINARY_OP(op) \
@@ -112,7 +148,7 @@ InterpretResult VM::run() {
                 
             case OpCode::GET_LOCAL: {
                 uint8_t slot = readByte();
-                push(stack[frame.stackOffset + slot]);
+                push(stack[frames.back().stackOffset + slot]);
                 break;
             }
                 
@@ -137,7 +173,7 @@ InterpretResult VM::run() {
                 
             case OpCode::SET_LOCAL: {
                 uint8_t slot = readByte();
-                stack[slot] = peek(0);
+                stack[frames.back().stackOffset + slot] = peek(0);
                 break;
             }
                 
@@ -205,27 +241,45 @@ InterpretResult VM::run() {
             
             case OpCode::JUMP: {
                 auto offset = readShort();
-                frame.ip += offset;
+                frames.back().ip += offset;
                 break;
             }
                 
             case OpCode::LOOP: {
                 auto offset = readShort();
-                frame.ip -= offset;
+                frames.back().ip -= offset;
                 break;
             }
                 
             case OpCode::JUMP_IF_FALSE: {
                 auto offset = readShort();
                 if (isFalsy(peek(0))) {
-                    frame.ip += offset;
+                    frames.back().ip += offset;
+                }
+                break;
+            }
+                
+            case OpCode::CALL: {
+                int argCount = readByte();
+                if (!callValue(peek(argCount), argCount)) {
+                    return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
             }
             
             case OpCode::RETURN: {
-                // Exit interpreter.
-                return InterpretResult::OK;
+                auto result = pop();
+                
+                auto lastOffset = frames.back().stackOffset;
+                frames.pop_back();
+                if (frames.empty()) {
+                    pop();
+                    return InterpretResult::OK;
+                }
+
+                stack.resize(lastOffset);
+                push(result);
+                break;
             }
         }
     }

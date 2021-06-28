@@ -60,10 +60,7 @@ class Compiler {
     Parser* parser;
 
 public:
-    explicit Compiler(Parser* parser, FunctionType type)
-        : parser(parser), type(type), function(std::make_shared<FunctionObject>(0, "")) {
-            locals.emplace_back(Local("", 0));
-        };
+    explicit Compiler(Parser* parser, FunctionType type);
     void addLocal(const std::string& name);
     void declareVariable(const std::string& name);
     void markInitialized();
@@ -103,6 +100,7 @@ class Parser {
     Function endCompiler();
     
     void binary(bool canAssign);
+    void call(bool canAssign);
     void literal(bool canAssign);
     void grouping(bool canAssign);
     void number(bool canAssign);
@@ -117,8 +115,11 @@ class Parser {
     int identifierConstant(const std::string& name);
     uint8_t parseVariable(const std::string& errorMessage);
     void defineVariable(uint8_t global);
+    uint8_t argumentList();
     void expression();
     void block();
+    void function(FunctionType type);
+    void funDeclaration();
     void varDeclaration();
     void expressionStatement();
     void forStatement();
@@ -126,6 +127,7 @@ class Parser {
     void declaration();
     void statement();
     void printStatement();
+    void returnStatement();
     void whileStatement();
     void synchronize();
 

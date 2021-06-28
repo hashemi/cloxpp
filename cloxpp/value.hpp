@@ -15,6 +15,9 @@
 #include <memory>
 
 class FunctionObject;
+class Compiler;
+class Parser;
+class VM;
 using Function = std::shared_ptr<FunctionObject>;
 
 using Value = std::variant<double, bool, std::monostate, std::string, Function>;
@@ -54,6 +57,10 @@ public:
     Chunk& getChunk() { return chunk; }
     uint8_t getCode(int offset) { return chunk.getCode(offset); }
     const Value& getConstant(int constant) const { return chunk.getConstant(constant); }
+
+    friend Compiler;
+    friend Parser;
+    friend VM;
 };
 
 struct OutputVisitor {

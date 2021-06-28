@@ -8,6 +8,14 @@
 
 #include "compiler.hpp"
 
+Compiler::Compiler(Parser* parser, FunctionType type)
+    : parser(parser), type(type), function(std::make_shared<FunctionObject>(0, "")) {
+        locals.emplace_back(Local("", 0));
+        if (type != TYPE_SCRIPT) {
+            function->name = parser->previous.text();
+        }
+};
+
 void Compiler::addLocal(const std::string& name) {
     if (locals.size() == UINT8_COUNT) {
         parser->error("Too many local variables in function.");
@@ -150,6 +158,7 @@ int Parser::emitJump(OpCode op) {
 }
 
 void Parser::emitReturn() {
+    emit(OpCode::NIL);
     emit(OpCode::RETURN);
 }
 
@@ -217,6 +226,11 @@ void Parser::binary(bool canAssign) {
         default:
             return; // Unreachable.
     }
+}
+
+void Parser::call(bool canAssign) {
+    auto argCount = argumentList();
+    emit(OpCode::CALL, argCount);
 }
 
 void Parser::literal(bool canAssign) {
@@ -310,6 +324,7 @@ ParseRule& Parser::getRule(TokenType type) {
     auto grouping = [this](bool canAssign) { this->grouping(canAssign); };
     auto unary = [this](bool canAssign) { this->unary(canAssign); };
     auto binary = [this](bool canAssign) { this->binary(canAssign); };
+    auto call = [this](bool canAssign) { this->call(canAssign); };
     auto number = [this](bool canAssign) { this->number(canAssign); };
     auto string = [this](bool canAssign) { this->string(canAssign); };
     auto literal = [this](bool canAssign) { this->literal(canAssign); };
@@ -318,7 +333,7 @@ ParseRule& Parser::getRule(TokenType type) {
     auto or_ = [this](bool canAssign) { this->or_(canAssign); };
     
     static ParseRule rules[] = {
-        { grouping,    nullptr,    Precedence::CALL },       // TOKEN_LEFT_PAREN
+        { grouping,    call,       Precedence::CALL },       // TOKEN_LEFT_PAREN
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_RIGHT_PAREN
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_LEFT_BRACE
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_RIGHT_BRACE
@@ -408,6 +423,21 @@ void Parser::defineVariable(uint8_t global) {
     emit(OpCode::DEFINE_GLOBAL, global);
 }
 
+uint8_t Parser::argumentList() {
+    uint8_t argCount = 0;
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do {
+            expression();
+            if (argCount == 255) {
+                error("Can't have more than 255 arguments.");
+            }
+            argCount++;
+        } while (match(TokenType::COMMA));
+    }
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
+    return argCount;
+}
+
 void Parser::expression() {
     parsePrecedence(Precedence::ASSIGNMENT);
 }
@@ -418,6 +448,38 @@ void Parser::block() {
     }
     
     consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
+}
+
+void Parser::function(FunctionType type) {
+    auto enclosingCompiler = compiler;
+    compiler = Compiler(this, type);
+    compiler.beginScope();
+
+    consume(TokenType::LEFT_PAREN, "Expect '(' after function name.");
+    if (!check(TokenType::RIGHT_PAREN)) {
+        do {
+            compiler.function->arity++;
+            if (compiler.function->arity > 255) {
+                errorAtCurrent("Can't have more than 255 parameters.");
+            }
+            auto constant = parseVariable("Expect parameter name.");
+            defineVariable(constant);
+        } while (match(TokenType::COMMA));
+    }
+    consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+    consume(TokenType::LEFT_BRACE, "Expect '{' before function body.");
+    block();
+    
+    auto function = endCompiler();
+    compiler = enclosingCompiler;
+    emit(OpCode::CONSTANT, makeConstant(function));
+}
+
+void Parser::funDeclaration() {
+    auto global = parseVariable("Expect function name.");
+    compiler.markInitialized();
+    function(TYPE_FUNCTION);
+    defineVariable(global);
 }
 
 void Parser::varDeclaration() {
@@ -505,7 +567,9 @@ void Parser::ifStatement() {
 }
 
 void Parser::declaration() {
-    if (match(TokenType::VAR)) {
+    if (match(TokenType::FUN)) {
+        funDeclaration();
+    } else if (match(TokenType::VAR)) {
         varDeclaration();
     } else {
         statement();
@@ -521,6 +585,8 @@ void Parser::statement() {
         forStatement();
     } else if (match(TokenType::IF)) {
         ifStatement();
+    } else if (match(TokenType::RETURN)) {
+        returnStatement();
     } else if (match(TokenType::WHILE)) {
         whileStatement();
     } else if (match(TokenType::LEFT_BRACE)) {
@@ -536,6 +602,20 @@ void Parser::printStatement() {
     expression();
     consume(TokenType::SEMICOLON, "Expect ';' after value.");
     emit(OpCode::PRINT);
+}
+
+void Parser::returnStatement() {
+    if (compiler.type == TYPE_SCRIPT) {
+        error("Can't return from top-level code.");
+    }
+    
+    if (match(TokenType::SEMICOLON)) {
+        emitReturn();
+    } else {
+        expression();
+        consume(TokenType::SEMICOLON, "Expect ';' after return value.");
+        emit(OpCode::RETURN);
+    }
 }
 
 void Parser::whileStatement() {

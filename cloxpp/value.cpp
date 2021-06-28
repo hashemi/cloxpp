@@ -113,6 +113,8 @@ int Chunk::disassembleInstruction(int offset) {
             return jumpInstruction("OP_JUMP_IF_FALSE", 1, *this, offset);
         case OpCode::LOOP:
             return jumpInstruction("OP_JUMP", -1, *this, offset);
+        case OpCode::CALL:
+            return byteInstruction("OP_LOOP", *this, offset);
         case OpCode::RETURN:
             return simpleInstruction("OP_RETURN", offset);
     }
