@@ -56,7 +56,7 @@ int Compiler::resolveLocal(const std::string& name) {
 }
 
 int Compiler::resolveUpvalue(const std::string& name) {
-    if (enclosing == NULL) return -1;
+    if (enclosing == nullptr) return -1;
     
     int local = enclosing->resolveLocal(name);
     if (local != -1) {
@@ -65,7 +65,7 @@ int Compiler::resolveUpvalue(const std::string& name) {
     
     int upvalue = enclosing->resolveUpvalue(name);
     if (upvalue != -1) {
-        return addUpvalue(static_cast<uint8_t>(local), false);
+        return addUpvalue(static_cast<uint8_t>(upvalue), false);
     }
     
     return -1;
@@ -83,10 +83,10 @@ int Compiler::addUpvalue(uint8_t index, bool isLocal) {
         return 0;
     }
 
-    upvalues.emplace_back(Upvalue(isLocal, index));
+    upvalues.emplace_back(Upvalue(index, isLocal));
     auto upvalueCount = static_cast<int>(upvalues.size());
     function->upvalueCount = upvalueCount;
-    return upvalueCount;
+    return upvalueCount - 1;
 }
 
 void Compiler::beginScope() { scopeDepth++; }
@@ -507,10 +507,12 @@ void Parser::function(FunctionType type) {
     block();
     
     auto function = endCompiler();
-    compiler = std::move(compiler->enclosing);
+    auto newCompiler = std::move(compiler);
+    compiler = std::move(newCompiler->enclosing);
+
     emit(OpCode::CLOSURE, makeConstant(function));
     
-    for (const auto& upvalue : compiler->upvalues) {
+    for (const auto& upvalue : newCompiler->upvalues) {
         emit(upvalue.isLocal ? 1 : 0);
         emit(upvalue.index);
     }
