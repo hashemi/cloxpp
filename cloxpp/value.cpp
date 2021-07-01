@@ -118,7 +118,7 @@ int Chunk::disassembleInstruction(int offset) {
         case OpCode::LOOP:
             return jumpInstruction("OP_JUMP", -1, *this, offset);
         case OpCode::CALL:
-            return byteInstruction("OP_LOOP", *this, offset);
+            return byteInstruction("OP_CALL", *this, offset);
         case OpCode::CLOSURE: {
             offset++;
             auto constant = code[offset++];
