@@ -13,6 +13,9 @@
 #include "compiler.hpp"
 #include <unordered_map>
 
+#define FRAMES_MAX 64
+#define STACK_MAX (FRAMES_MAX * UINT8_COUNT)
+
 enum class InterpretResult {
     OK,
     COMPILE_ERROR,
@@ -30,11 +33,16 @@ static Value clockNative(int argCount, std::vector<Value>::iterator args) {
 }
 
 class VM {
+    // TODO: Switch to a fixed array to prevent pointer invalidation
     std::vector<Value> stack;
     std::vector<CallFrame> frames;
     std::unordered_map<std::string, Value> globals;
     
-    inline void resetStack() { stack.clear(); frames.clear(); }
+    inline void resetStack() {
+        stack.clear();
+        frames.clear();
+        stack.reserve(STACK_MAX);
+    }
     
     void runtimeError(const char* format, ...);
     void defineNative(const std::string& name, NativeFn function);
@@ -55,6 +63,7 @@ class VM {
     
 public:
     explicit VM() {
+        stack.reserve(STACK_MAX);
         defineNative("clock", clockNative);
     }
     InterpretResult interpret(const std::string& source);
