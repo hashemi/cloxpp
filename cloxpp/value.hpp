@@ -54,7 +54,9 @@ struct NativeFunctionObject {
 
 struct UpvalueObject {
     Value* location;
-    UpvalueObject(Value* slot): location(slot) {}
+    Value closed;
+    UpvalueValue next;
+    UpvalueObject(Value* slot): location(slot), closed(std::monostate()), next(nullptr) {}
 };
 
 class FunctionObject {

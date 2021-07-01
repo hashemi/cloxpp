@@ -60,6 +60,7 @@ int Compiler::resolveUpvalue(const std::string& name) {
     
     int local = enclosing->resolveLocal(name);
     if (local != -1) {
+        enclosing->locals[local].isCaptured = true;
         return addUpvalue(static_cast<uint8_t>(local), true);
     }
     
@@ -94,7 +95,11 @@ void Compiler::beginScope() { scopeDepth++; }
 void Compiler::endScope() {
     scopeDepth--;
     while (!locals.empty() && locals.back().depth > scopeDepth) {
-        parser->emit(OpCode::POP);
+        if (locals.back().isCaptured) {
+            parser->emit(OpCode::CLOSE_UPVALUE);
+        } else {
+            parser->emit(OpCode::POP);
+        }
         locals.pop_back();
     }
 }

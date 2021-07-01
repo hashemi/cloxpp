@@ -42,7 +42,8 @@ struct ParseRule {
 struct Local {
     std::string name;
     int depth;
-    Local(std::string name, int depth): name(name), depth(depth) {};
+    bool isCaptured;
+    Local(std::string name, int depth): name(name), depth(depth), isCaptured(false) {};
 };
 
 class Upvalue {

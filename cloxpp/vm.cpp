@@ -31,7 +31,37 @@ bool VM::callValue(const Value& callee, int argCount) {
 }
 
 UpvalueValue VM::captureUpvalue(Value* local) {
-    return std::make_shared<UpvalueObject>(local);
+    UpvalueValue prevUpvalue = nullptr;
+    auto upvalue = openUpvalues;
+    
+    while (upvalue != nullptr && upvalue->location > local) {
+        prevUpvalue = upvalue;
+        upvalue = upvalue->next;
+    }
+    
+    if (upvalue != nullptr && upvalue->location == local) {
+        return upvalue;
+    }
+    
+    auto createdUpvalue = std::make_shared<UpvalueObject>(local);
+    createdUpvalue->next = upvalue;
+    
+    if (prevUpvalue == nullptr) {
+        openUpvalues = createdUpvalue;
+    } else {
+        prevUpvalue->next = createdUpvalue;
+    }
+    
+    return createdUpvalue;
+}
+
+void VM::closeUpvalues(Value* last) {
+    while (openUpvalues != nullptr && openUpvalues->location >= last) {
+        auto upvalue = openUpvalues;
+        upvalue->closed = *upvalue->location;
+        upvalue->location = &upvalue->closed;
+        openUpvalues = upvalue->next;
+    }
 }
 
 bool VM::call(Closure closure, int argCount) {
@@ -310,8 +340,14 @@ InterpretResult VM::run() {
                 break;
             }
             
+            case OpCode::CLOSE_UPVALUE:
+                closeUpvalues(&stack.back());
+                pop();
+                break;
+                
             case OpCode::RETURN: {
                 auto result = pop();
+                closeUpvalues(&stack[frames.back().stackOffset]);
                 
                 auto lastOffset = frames.back().stackOffset;
                 frames.pop_back();

@@ -39,6 +39,7 @@ enum class OpCode: uint8_t {
     LOOP,
     CALL,
     CLOSURE,
+    CLOSE_UPVALUE,
     RETURN,
 };
 

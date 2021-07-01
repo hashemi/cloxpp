@@ -37,11 +37,13 @@ class VM {
     std::vector<Value> stack;
     std::vector<CallFrame> frames;
     std::unordered_map<std::string, Value> globals;
+    UpvalueValue openUpvalues;
     
     inline void resetStack() {
         stack.clear();
         frames.clear();
         stack.reserve(STACK_MAX);
+        openUpvalues = nullptr;
     }
     
     void runtimeError(const char* format, ...);
@@ -59,11 +61,13 @@ class VM {
     inline Value const& peek(int distance) { return stack[stack.size() - 1 - distance]; }
     bool callValue(const Value& callee, int argCount);
     UpvalueValue captureUpvalue(Value* local);
+    void closeUpvalues(Value* last);
     bool call(Closure closure, int argCount);
     
 public:
     explicit VM() {
         stack.reserve(STACK_MAX);
+        openUpvalues = nullptr;
         defineNative("clock", clockNative);
     }
     InterpretResult interpret(const std::string& source);
