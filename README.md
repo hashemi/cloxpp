@@ -24,13 +24,14 @@ This port implements code from the following chapters of Part III of the book:
 22. Local Variables.
 23. Jumping Back and Forth.
 24. Calls and Functions.
+25. Closures.
 
 ## Tests
 
 The test suite is from the reference C implementation. To run the tests:
 
 ```
-./test_cloxpp.py chap24_calls
+./test_cloxpp.py chap25_closures
 ```
 
 The test script assumes that the binary is in `build/Release/cloxpp`, which is where it ends up after running `xcodebuild` from the command line.
