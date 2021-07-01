@@ -19,6 +19,7 @@ bool VM::callValue(const Value& callee, int argCount) {
         [this, argCount](NativeFunction native) -> bool {
             auto result = native->function(argCount, stack.end() - argCount);
             stack.resize(stack.size() - argCount - 1);
+            stack.reserve(STACK_MAX);
             push(result);
             return true;
         },
@@ -320,6 +321,7 @@ InterpretResult VM::run() {
                 }
 
                 stack.resize(lastOffset);
+                stack.reserve(STACK_MAX);
                 push(result);
                 break;
             }
