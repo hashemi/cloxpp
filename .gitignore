@@ -3,3 +3,6 @@ xcshareddata/
 build/
 .DS_Store
 __pycache__
+.dart_tool/
+.packages
+pubspec.lock

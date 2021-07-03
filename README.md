@@ -30,11 +30,17 @@ This port implements code from the following chapters of Part III of the book:
 
 The test suite is from the reference C implementation. To run the tests:
 
-```
-./test_cloxpp.py chap25_closures
+```zsh
+dart tool/bin/test.dart chap25_closures --interpreter build/Release/cloxpp
 ```
 
-The test script assumes that the binary is in `build/Release/cloxpp`, which is where it ends up after running `xcodebuild` from the command line.
+The command specifies `build/Release/cloxpp` as the binary, which is where it ends up after running `xcodebuild` from the command line.
+
+For the test suite to run, you need to have the Dart programming language SDK installed. After that, you need to get the test runners dependencies by going to the `tool` directory and running:
+
+```zsh
+pub get
+```
 
 ## Goals & Design
 My goal in this project is to become more proficient in C++.
