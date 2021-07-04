@@ -272,6 +272,18 @@ void Parser::call(bool canAssign) {
     emit(OpCode::CALL, argCount);
 }
 
+void Parser::dot(bool canAssign) {
+    consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
+    auto name = identifierConstant(std::string(previous.text()));
+    
+    if (canAssign && match(TokenType::EQUAL)) {
+        expression();
+        emit(OpCode::SET_PROPERTY, name);
+    } else {
+        emit(OpCode::GET_PROPERTY, name);
+    }
+}
+
 void Parser::literal(bool canAssign) {
     switch (previous.type()) {
         case TokenType::FALSE: emit(OpCode::FALSE); break;
@@ -367,6 +379,7 @@ ParseRule& Parser::getRule(TokenType type) {
     auto unary = [this](bool canAssign) { this->unary(canAssign); };
     auto binary = [this](bool canAssign) { this->binary(canAssign); };
     auto call = [this](bool canAssign) { this->call(canAssign); };
+    auto dot = [this](bool canAssign) { this->dot(canAssign); };
     auto number = [this](bool canAssign) { this->number(canAssign); };
     auto string = [this](bool canAssign) { this->string(canAssign); };
     auto literal = [this](bool canAssign) { this->literal(canAssign); };
@@ -380,7 +393,7 @@ ParseRule& Parser::getRule(TokenType type) {
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_LEFT_BRACE
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_RIGHT_BRACE
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_COMMA
-        { nullptr,     nullptr,    Precedence::CALL },       // TOKEN_DOT
+        { nullptr,     dot,        Precedence::CALL },       // TOKEN_DOT
         { unary,       binary,     Precedence::TERM },       // TOKEN_MINUS
         { nullptr,     binary,     Precedence::TERM },       // TOKEN_PLUS
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_SEMICOLON
@@ -523,6 +536,18 @@ void Parser::function(FunctionType type) {
     }
 }
 
+void Parser::classDeclaration() {
+    consume(TokenType::IDENTIFIER, "Expect class name.");
+    auto nameConstant = identifierConstant(std::string(previous.text()));
+    compiler->declareVariable(std::string(previous.text()));
+    
+    emit(OpCode::CLASS, nameConstant);
+    defineVariable(nameConstant);
+    
+    consume(TokenType::LEFT_BRACE, "Expect '{' before class body.");
+    consume(TokenType::RIGHT_BRACE, "Expect '}' after class body.");
+}
+
 void Parser::funDeclaration() {
     auto global = parseVariable("Expect function name.");
     compiler->markInitialized();
@@ -615,7 +640,9 @@ void Parser::ifStatement() {
 }
 
 void Parser::declaration() {
-    if (match(TokenType::FUN)) {
+    if (match(TokenType::CLASS)) {
+        classDeclaration();
+    } else if (match(TokenType::FUN)) {
         funDeclaration();
     } else if (match(TokenType::VAR)) {
         varDeclaration();

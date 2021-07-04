@@ -8,8 +8,6 @@ The book goes over two implementations:
 
 2. A bytecode interpreter written in C. I'm porting that to Swift ([bslox](https://github.com/hashemi/bslox)) and C++ (this repo).
 
-The book is being released as chapters are completed, one chapter at a time.
-
 ## Progress
 This port implements code from the following chapters of Part III of the book:
 
@@ -25,13 +23,15 @@ This port implements code from the following chapters of Part III of the book:
 23. Jumping Back and Forth.
 24. Calls and Functions.
 25. Closures.
+26. Garbage Collection.
+27. Classes and Instances.
 
 ## Tests
 
 The test suite is from the reference C implementation. To run the tests:
 
 ```zsh
-dart tool/bin/test.dart chap25_closures --interpreter build/Release/cloxpp
+dart tool/bin/test.dart chap27_classes --interpreter build/Release/cloxpp
 ```
 
 The command specifies `build/Release/cloxpp` as the binary, which is where it ends up after running `xcodebuild` from the command line.

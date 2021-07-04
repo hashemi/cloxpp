@@ -114,6 +114,7 @@ class Parser {
     
     void binary(bool canAssign);
     void call(bool canAssign);
+    void dot(bool canAssign);
     void literal(bool canAssign);
     void grouping(bool canAssign);
     void number(bool canAssign);
@@ -132,6 +133,7 @@ class Parser {
     void expression();
     void block();
     void function(FunctionType type);
+    void classDeclaration();
     void funDeclaration();
     void varDeclaration();
     void expressionStatement();

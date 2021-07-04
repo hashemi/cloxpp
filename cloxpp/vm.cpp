@@ -23,6 +23,12 @@ bool VM::callValue(const Value& callee, int argCount) {
             push(result);
             return true;
         },
+        [this, argCount](ClassValue klass) -> bool {
+            stack.resize(stack.size() - argCount - 1);
+            stack.reserve(STACK_MAX);
+            push(std::make_shared<InstanceObject>(klass));
+            return true;
+        },
         [this](auto v) -> bool {
             this->runtimeError("Can only call functions and classes.");
             return false;
@@ -245,6 +251,39 @@ InterpretResult VM::run() {
                 *frames.back().closure->upvalues[slot]->location = peek(0);
                 break;
             }
+            case OpCode::GET_PROPERTY: {
+                try {
+                    auto instance = std::get<InstanceValue>(peek(0));
+                    auto name = readString();
+                    auto found = instance->fields.find(name);
+                    if (found == instance->fields.end()) {
+                        runtimeError("Undefined property '%s'.", name.c_str());
+                        return InterpretResult::RUNTIME_ERROR;
+                    }
+                    auto value = found->second;
+                    pop(); // Instance.
+                    push(value);
+                } catch (std::bad_variant_access&) {
+                    runtimeError("Only instances have properties.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
+            case OpCode::SET_PROPERTY: {
+                try {
+                    auto instance = std::get<InstanceValue>(peek(1));
+                    auto name = readString();
+                    instance->fields[name] = peek(0);
+                    
+                    auto value = pop();
+                    pop();
+                    push(value);
+                } catch (std::bad_variant_access&) {
+                    runtimeError("Only instances have fields.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
             case OpCode::EQUAL: {
                 popTwoAndPush(peek(0) == peek(1));
                 break;
@@ -361,6 +400,9 @@ InterpretResult VM::run() {
                 push(result);
                 break;
             }
+                
+            case OpCode::CLASS:
+                push(std::make_shared<ClassObject>(readString()));
         }
     }
     

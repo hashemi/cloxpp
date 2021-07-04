@@ -13,9 +13,12 @@
 #include "opcode.hpp"
 #include <variant>
 #include <memory>
+#include <unordered_map>
 
 struct NativeFunctionObject;
 struct UpvalueObject;
+struct ClassObject;
+struct InstanceObject;
 class FunctionObject;
 class ClosureObject;
 class Compiler;
@@ -25,8 +28,10 @@ using Function = std::shared_ptr<FunctionObject>;
 using NativeFunction = std::shared_ptr<NativeFunctionObject>;
 using Closure = std::shared_ptr<ClosureObject>;
 using UpvalueValue = std::shared_ptr<UpvalueObject>;
+using ClassValue = std::shared_ptr<ClassObject>;
+using InstanceValue = std::shared_ptr<InstanceObject>;
 
-using Value = std::variant<double, bool, std::monostate, std::string, Function, NativeFunction, Closure, UpvalueValue>;
+using Value = std::variant<double, bool, std::monostate, std::string, Function, NativeFunction, Closure, UpvalueValue, ClassValue, InstanceValue>;
 
 class Chunk {
     std::vector<uint8_t> code;
@@ -57,6 +62,17 @@ struct UpvalueObject {
     Value closed;
     UpvalueValue next;
     UpvalueObject(Value* slot): location(slot), closed(std::monostate()), next(nullptr) {}
+};
+
+struct ClassObject {
+    std::string name;
+    explicit ClassObject(std::string name): name(name) {}
+};
+
+struct InstanceObject {
+    ClassValue klass;
+    std::unordered_map<std::string, Value> fields;
+    explicit InstanceObject(ClassValue klass): klass(klass) {}
 };
 
 class FunctionObject {
@@ -111,6 +127,8 @@ struct OutputVisitor {
     void operator()(const NativeFunction& f) const { std::cout << "<native fn>"; }
     void operator()(const Closure& c) const { std::cout << Value(c->function); }
     void operator()(const UpvalueValue& u) const { std::cout << "upvalue"; }
+    void operator()(const ClassValue& c) const { std::cout << c->name; }
+    void operator()(const InstanceValue& i) const { std::cout << i->klass->name << " instance"; }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Value& v) {
@@ -127,6 +145,8 @@ struct FalsinessVisitor {
     bool operator()(const NativeFunction& f) const { return false; }
     bool operator()(const Closure& f) const { return false; }
     bool operator()(const UpvalueValue& u) const { return false; }
+    bool operator()(const ClassValue& c) const { return false; }
+    bool operator()(const InstanceValue& i) const { return false; }
 };
 
 inline bool isFalsy(const Value& v) {

@@ -24,6 +24,8 @@ enum class OpCode: uint8_t {
     SET_GLOBAL,
     GET_UPVALUE,
     SET_UPVALUE,
+    GET_PROPERTY,
+    SET_PROPERTY,
     EQUAL,
     GREATER,
     LESS,
@@ -41,6 +43,7 @@ enum class OpCode: uint8_t {
     CLOSURE,
     CLOSE_UPVALUE,
     RETURN,
+    CLASS
 };
 
 
