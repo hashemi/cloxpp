@@ -25,13 +25,14 @@ This port implements code from the following chapters of Part III of the book:
 25. Closures.
 26. Garbage Collection.
 27. Classes and Instances.
+28. Methods and Initializers.
 
 ## Tests
 
 The test suite is from the reference C implementation. To run the tests:
 
 ```zsh
-dart tool/bin/test.dart chap27_classes --interpreter build/Release/cloxpp
+dart tool/bin/test.dart chap28_methods --interpreter build/Release/cloxpp
 ```
 
 The command specifies `build/Release/cloxpp` as the binary, which is where it ends up after running `xcodebuild` from the command line.

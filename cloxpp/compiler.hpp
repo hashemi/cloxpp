@@ -57,7 +57,7 @@ public:
 class Parser;
 
 typedef enum {
-    TYPE_FUNCTION, TYPE_SCRIPT
+    TYPE_FUNCTION, TYPE_INITIALIZER, TYPE_METHOD, TYPE_SCRIPT
 } FunctionType;
 
 class Compiler {
@@ -85,11 +85,19 @@ public:
     friend Parser;
 };
 
+class ClassCompiler {
+    std::unique_ptr<ClassCompiler> enclosing;
+public:
+    explicit ClassCompiler(std::unique_ptr<ClassCompiler> enclosing);
+    friend Parser;
+};
+
 class Parser {
     Token current;
     Token previous;
     Scanner scanner;
     std::unique_ptr<Compiler> compiler;
+    std::unique_ptr<ClassCompiler> classCompiler;
     
     bool hadError;
     bool panicMode;
@@ -122,6 +130,7 @@ class Parser {
     void string(bool canAssign);
     void namedVariable(const std::string& name, bool canAssign);
     void variable(bool canAssign);
+    void this_(bool canAssign);
     void and_(bool canAssign);
     void unary(bool canAssign);
     ParseRule& getRule(TokenType type);
@@ -133,6 +142,7 @@ class Parser {
     void expression();
     void block();
     void function(FunctionType type);
+    void method();
     void classDeclaration();
     void funDeclaration();
     void varDeclaration();

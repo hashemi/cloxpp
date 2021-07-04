@@ -38,6 +38,7 @@ class VM {
     std::vector<CallFrame> frames;
     std::unordered_map<std::string, Value> globals;
     UpvalueValue openUpvalues;
+    std::string initString = "init";
     
     inline void resetStack() {
         stack.clear();
@@ -60,8 +61,10 @@ class VM {
     }
     inline Value const& peek(int distance) { return stack[stack.size() - 1 - distance]; }
     bool callValue(const Value& callee, int argCount);
+    bool bindMethod(ClassValue klass, const std::string& name);
     UpvalueValue captureUpvalue(Value* local);
     void closeUpvalues(Value* last);
+    void defineMethod(const std::string& name);
     bool call(Closure closure, int argCount);
     
 public:

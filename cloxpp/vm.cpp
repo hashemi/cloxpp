@@ -24,16 +24,42 @@ bool VM::callValue(const Value& callee, int argCount) {
             return true;
         },
         [this, argCount](ClassValue klass) -> bool {
-            stack.resize(stack.size() - argCount - 1);
-            stack.reserve(STACK_MAX);
-            push(std::make_shared<InstanceObject>(klass));
+            stack[stack.size() - argCount - 1] = std::make_shared<InstanceObject>(klass);
+            auto found = klass->methods.find(initString);
+            if (found != klass->methods.end()) {
+                auto initializer = found->second;
+                return call(initializer, argCount);
+            } else if (argCount != 0) {
+                runtimeError("Expected 0 arguments but got %d.", argCount);
+                return false;
+            }
             return true;
+        },
+        [this, argCount](BoundMethodValue bound) -> bool {
+            stack[stack.size() - argCount - 1] = bound->receiver;
+            return call(bound->method, argCount);
         },
         [this](auto v) -> bool {
             this->runtimeError("Can only call functions and classes.");
             return false;
         }
     }, callee);
+}
+
+bool VM::bindMethod(ClassValue klass, const std::string& name) {
+    auto found = klass->methods.find(name);
+    if (found == klass->methods.end()) {
+        runtimeError("Undefined property '%s'.", name.c_str());
+        return false;
+    }
+    auto method = found->second;
+    auto instance = std::get<InstanceValue>(peek(0));
+    auto bound = std::make_shared<BoundMethodObject>(instance, method);
+    
+    pop();
+    push(bound);
+    
+    return true;
 }
 
 UpvalueValue VM::captureUpvalue(Value* local) {
@@ -68,6 +94,13 @@ void VM::closeUpvalues(Value* last) {
         upvalue->location = &upvalue->closed;
         openUpvalues = upvalue->next;
     }
+}
+
+void VM::defineMethod(const std::string& name) {
+    auto method = std::get<Closure>(peek(0));
+    auto klass = std::get<ClassValue>(peek(1));
+    klass->methods[name] = method;
+    pop();
 }
 
 bool VM::call(Closure closure, int argCount) {
@@ -252,19 +285,25 @@ InterpretResult VM::run() {
                 break;
             }
             case OpCode::GET_PROPERTY: {
+                InstanceValue instance;
+
                 try {
-                    auto instance = std::get<InstanceValue>(peek(0));
-                    auto name = readString();
-                    auto found = instance->fields.find(name);
-                    if (found == instance->fields.end()) {
-                        runtimeError("Undefined property '%s'.", name.c_str());
-                        return InterpretResult::RUNTIME_ERROR;
-                    }
+                    instance = std::get<InstanceValue>(peek(0));
+                } catch (std::bad_variant_access&) {
+                    runtimeError("Only instances have properties.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+
+                auto name = readString();
+                auto found = instance->fields.find(name);
+                if (found != instance->fields.end()) {
                     auto value = found->second;
                     pop(); // Instance.
                     push(value);
-                } catch (std::bad_variant_access&) {
-                    runtimeError("Only instances have properties.");
+                    break;
+                }
+
+                if (!bindMethod(instance->klass, name)) {
                     return InterpretResult::RUNTIME_ERROR;
                 }
                 break;
@@ -403,6 +442,11 @@ InterpretResult VM::run() {
                 
             case OpCode::CLASS:
                 push(std::make_shared<ClassObject>(readString()));
+                break;
+                
+            case OpCode::METHOD:
+                defineMethod(readString());
+                break;
         }
     }
     

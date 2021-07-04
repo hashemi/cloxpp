@@ -19,6 +19,7 @@ struct NativeFunctionObject;
 struct UpvalueObject;
 struct ClassObject;
 struct InstanceObject;
+struct BoundMethodObject;
 class FunctionObject;
 class ClosureObject;
 class Compiler;
@@ -30,8 +31,9 @@ using Closure = std::shared_ptr<ClosureObject>;
 using UpvalueValue = std::shared_ptr<UpvalueObject>;
 using ClassValue = std::shared_ptr<ClassObject>;
 using InstanceValue = std::shared_ptr<InstanceObject>;
+using BoundMethodValue = std::shared_ptr<BoundMethodObject>;
 
-using Value = std::variant<double, bool, std::monostate, std::string, Function, NativeFunction, Closure, UpvalueValue, ClassValue, InstanceValue>;
+using Value = std::variant<double, bool, std::monostate, std::string, Function, NativeFunction, Closure, UpvalueValue, ClassValue, InstanceValue, BoundMethodValue>;
 
 class Chunk {
     std::vector<uint8_t> code;
@@ -66,6 +68,7 @@ struct UpvalueObject {
 
 struct ClassObject {
     std::string name;
+    std::unordered_map<std::string, Closure> methods;
     explicit ClassObject(std::string name): name(name) {}
 };
 
@@ -73,6 +76,13 @@ struct InstanceObject {
     ClassValue klass;
     std::unordered_map<std::string, Value> fields;
     explicit InstanceObject(ClassValue klass): klass(klass) {}
+};
+
+struct BoundMethodObject {
+    InstanceValue receiver;
+    Closure method;
+    explicit BoundMethodObject(InstanceValue receiver, Closure method)
+        : receiver(receiver), method(method) {}
 };
 
 class FunctionObject {
@@ -129,6 +139,7 @@ struct OutputVisitor {
     void operator()(const UpvalueValue& u) const { std::cout << "upvalue"; }
     void operator()(const ClassValue& c) const { std::cout << c->name; }
     void operator()(const InstanceValue& i) const { std::cout << i->klass->name << " instance"; }
+    void operator()(const BoundMethodValue& m) const { std::cout << Value(m->method->function); }
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Value& v) {
@@ -147,6 +158,7 @@ struct FalsinessVisitor {
     bool operator()(const UpvalueValue& u) const { return false; }
     bool operator()(const ClassValue& c) const { return false; }
     bool operator()(const InstanceValue& i) const { return false; }
+    bool operator()(const BoundMethodValue& m) const { return false; }
 };
 
 inline bool isFalsy(const Value& v) {

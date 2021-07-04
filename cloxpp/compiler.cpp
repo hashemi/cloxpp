@@ -10,7 +10,7 @@
 
 Compiler::Compiler(Parser* parser, FunctionType type, std::unique_ptr<Compiler> enclosing)
     : parser(parser), type(type), function(std::make_shared<FunctionObject>(0, "")), enclosing(std::move(enclosing)) {
-        locals.emplace_back(Local("", 0));
+        locals.emplace_back(Local(type == TYPE_FUNCTION ? "" : "this", 0));
         if (type != TYPE_SCRIPT) {
             function->name = parser->previous.text();
         }
@@ -108,11 +108,14 @@ bool Compiler::isLocal() {
     return scopeDepth > 0;
 }
 
+ClassCompiler::ClassCompiler(std::unique_ptr<ClassCompiler> enclosing)
+    : enclosing(std::move(enclosing)) {};
+
 Parser::Parser(const std::string& source) :
     previous(Token(TokenType::_EOF, source, 0)),
     current(Token(TokenType::_EOF, source, 0)),
     scanner(Scanner(source)),
-    hadError(false), panicMode(false)
+    hadError(false), panicMode(false), classCompiler(nullptr)
 {
     compiler = std::make_unique<Compiler>(this, TYPE_SCRIPT, nullptr);
     advance();
@@ -197,7 +200,11 @@ int Parser::emitJump(OpCode op) {
 }
 
 void Parser::emitReturn() {
-    emit(OpCode::NIL);
+    if (compiler->type == TYPE_INITIALIZER) {
+        emit(OpCode::GET_LOCAL, 0);
+    } else {
+        emit(OpCode::NIL);
+    }
     emit(OpCode::RETURN);
 }
 
@@ -349,6 +356,14 @@ void Parser::variable(bool canAssign) {
     namedVariable(std::string(previous.text()), canAssign);
 }
 
+void Parser::this_(bool canAssign) {
+    if (classCompiler == nullptr) {
+        error("Can't use 'this' outside of a class.");
+        return;
+    }
+    variable(false);
+}
+
 void Parser::and_(bool canAssign) {
     int endJump = emitJump(OpCode::JUMP_IF_FALSE);
     
@@ -384,6 +399,7 @@ ParseRule& Parser::getRule(TokenType type) {
     auto string = [this](bool canAssign) { this->string(canAssign); };
     auto literal = [this](bool canAssign) { this->literal(canAssign); };
     auto variable = [this](bool canAssign) { this->variable(canAssign); };
+    auto this_ = [this](bool canAssign) { this->this_(canAssign); };
     auto and_ = [this](bool canAssign) { this->and_(canAssign); };
     auto or_ = [this](bool canAssign) { this->or_(canAssign); };
     
@@ -422,7 +438,7 @@ ParseRule& Parser::getRule(TokenType type) {
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_PRINT
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_RETURN
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_SUPER
-        { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_THIS
+        { this_,       nullptr,    Precedence::NONE },       // TOKEN_THIS
         { literal,     nullptr,    Precedence::NONE },       // TOKEN_TRUE
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_VAR
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_WHILE
@@ -536,16 +552,34 @@ void Parser::function(FunctionType type) {
     }
 }
 
+void Parser::method() {
+    consume(TokenType::IDENTIFIER, "Expect method name.");
+    auto constant = identifierConstant(std::string(previous.text()));
+    auto type = previous.text() == "init" ? TYPE_INITIALIZER : TYPE_METHOD;
+    function(type);
+    emit(OpCode::METHOD, constant);
+}
+
 void Parser::classDeclaration() {
     consume(TokenType::IDENTIFIER, "Expect class name.");
-    auto nameConstant = identifierConstant(std::string(previous.text()));
+    auto className = std::string(previous.text());
+    auto nameConstant = identifierConstant(className);
     compiler->declareVariable(std::string(previous.text()));
     
     emit(OpCode::CLASS, nameConstant);
     defineVariable(nameConstant);
     
+    classCompiler = std::make_unique<ClassCompiler>(std::move(classCompiler));
+    
+    namedVariable(className, false);
     consume(TokenType::LEFT_BRACE, "Expect '{' before class body.");
+    while (!check(TokenType::RIGHT_BRACE) && !check(TokenType::_EOF)) {
+        method();
+    }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after class body.");
+    emit(OpCode::POP);
+    
+    classCompiler = std::move(classCompiler->enclosing);
 }
 
 void Parser::funDeclaration() {
@@ -687,6 +721,10 @@ void Parser::returnStatement() {
     if (match(TokenType::SEMICOLON)) {
         emitReturn();
     } else {
+        if (compiler->type == TYPE_INITIALIZER) {
+            error("Can't return a value from an initializer.");
+        }
+        
         expression();
         consume(TokenType::SEMICOLON, "Expect ';' after return value.");
         emit(OpCode::RETURN);

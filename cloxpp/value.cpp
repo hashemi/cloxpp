@@ -146,6 +146,8 @@ int Chunk::disassembleInstruction(int offset) {
             return simpleInstruction("OP_RETURN", offset);
         case OpCode::CLASS:
             return constantInstruction("OP_CLASS", *this, offset);
+        case OpCode::METHOD:
+            return constantInstruction("OP_METHOD", *this, offset);
     }
     
     std::cout << "Unknown opcode: " << code[offset] << std::endl;

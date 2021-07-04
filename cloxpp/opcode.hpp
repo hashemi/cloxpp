@@ -43,7 +43,8 @@ enum class OpCode: uint8_t {
     CLOSURE,
     CLOSE_UPVALUE,
     RETURN,
-    CLASS
+    CLASS,
+    METHOD
 };
 
 
