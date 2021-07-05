@@ -286,6 +286,10 @@ void Parser::dot(bool canAssign) {
     if (canAssign && match(TokenType::EQUAL)) {
         expression();
         emit(OpCode::SET_PROPERTY, name);
+    } else if (match(TokenType::LEFT_PAREN)) {
+        auto argCount = argumentList();
+        emit(OpCode::INVOKE, name);
+        emit(argCount);
     } else {
         emit(OpCode::GET_PROPERTY, name);
     }

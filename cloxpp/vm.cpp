@@ -46,6 +46,34 @@ bool VM::callValue(const Value& callee, int argCount) {
     }, callee);
 }
 
+bool VM::invoke(const std::string& name, int argCount) {
+    try {
+        auto instance = std::get<InstanceValue>(peek(argCount));
+        
+        auto found = instance->fields.find(name);
+        if (found != instance->fields.end()) {
+            auto value = found->second;
+            stack[stack.size() - argCount - 1] = value;
+            return callValue(value, argCount);
+        }
+        
+        return invokeFromClass(instance->klass, name, argCount);
+    } catch (std::bad_variant_access&) {
+        runtimeError("Only instances have methods.");
+        return false;
+    }
+}
+
+bool VM::invokeFromClass(ClassValue klass, const std::string& name, int argCount) {
+    auto found = klass->methods.find(name);
+    if (found == klass->methods.end()) {
+        runtimeError("Undefined property '%s'.", name.c_str());
+        return false;
+    }
+    auto method = found->second;
+    return call(method, argCount);
+}
+
 bool VM::bindMethod(ClassValue klass, const std::string& name) {
     auto found = klass->methods.find(name);
     if (found == klass->methods.end()) {
@@ -397,6 +425,15 @@ InterpretResult VM::run() {
             case OpCode::CALL: {
                 int argCount = readByte();
                 if (!callValue(peek(argCount), argCount)) {
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
+                
+            case OpCode::INVOKE: {
+                auto method = readString();
+                int argCount = readByte();
+                if (!invoke(method, argCount)) {
                     return InterpretResult::RUNTIME_ERROR;
                 }
                 break;

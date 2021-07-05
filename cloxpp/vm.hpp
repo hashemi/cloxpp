@@ -61,6 +61,8 @@ class VM {
     }
     inline Value const& peek(int distance) { return stack[stack.size() - 1 - distance]; }
     bool callValue(const Value& callee, int argCount);
+    bool invoke(const std::string& name, int argCount);
+    bool invokeFromClass(ClassValue klass, const std::string& name, int argCount);
     bool bindMethod(ClassValue klass, const std::string& name);
     UpvalueValue captureUpvalue(Value* local);
     void closeUpvalues(Value* last);

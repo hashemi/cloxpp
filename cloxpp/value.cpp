@@ -43,6 +43,14 @@ static int constantInstruction(const std::string& name, const Chunk& chunk, int 
     return offset + 2;
 }
 
+static int invokeInstruction(const std::string& name, const Chunk& chunk, int offset) {
+    auto constant = chunk.getCode(offset + 1);
+    auto argCount = chunk.getCode(offset + 2);
+    printf("%-16s (%d args) %4d '", name.c_str(), argCount, constant);
+    std::cout << chunk.getConstant(constant) << "'" << std::endl;
+    return offset + 3;
+}
+
 static int byteInstruction(const std::string& name, const Chunk& chunk, int offset) {
     auto slot = chunk.getCode(offset + 1);
     printf("%-16s %4d\n", name.c_str(), slot);
@@ -123,6 +131,8 @@ int Chunk::disassembleInstruction(int offset) {
             return jumpInstruction("OP_JUMP", -1, *this, offset);
         case OpCode::CALL:
             return byteInstruction("OP_CALL", *this, offset);
+        case OpCode::INVOKE:
+            return invokeInstruction("OP_INVOKE", *this, offset);
         case OpCode::CLOSURE: {
             offset++;
             auto constant = code[offset++];
