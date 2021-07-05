@@ -103,6 +103,8 @@ int Chunk::disassembleInstruction(int offset) {
             return constantInstruction("OP_GET_PROPERTY", *this, offset);
         case OpCode::SET_PROPERTY:
             return constantInstruction("OP_SET_PROPERTY", *this, offset);
+        case OpCode::GET_SUPER:
+            return constantInstruction("OP_GET_SUPER", *this, offset);
         case OpCode::EQUAL:
             return simpleInstruction("OP_EQUAL", offset);
         case OpCode::GREATER:
@@ -133,6 +135,8 @@ int Chunk::disassembleInstruction(int offset) {
             return byteInstruction("OP_CALL", *this, offset);
         case OpCode::INVOKE:
             return invokeInstruction("OP_INVOKE", *this, offset);
+        case OpCode::SUPER_INVOKE:
+            return invokeInstruction("OP_SUPER_INVOKE", *this, offset);
         case OpCode::CLOSURE: {
             offset++;
             auto constant = code[offset++];
@@ -156,6 +160,8 @@ int Chunk::disassembleInstruction(int offset) {
             return simpleInstruction("OP_RETURN", offset);
         case OpCode::CLASS:
             return constantInstruction("OP_CLASS", *this, offset);
+        case OpCode::INHERIT:
+            return simpleInstruction("OP_INHERIT", offset);
         case OpCode::METHOD:
             return constantInstruction("OP_METHOD", *this, offset);
     }

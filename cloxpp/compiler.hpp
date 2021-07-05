@@ -87,6 +87,7 @@ public:
 
 class ClassCompiler {
     std::unique_ptr<ClassCompiler> enclosing;
+    bool hasSuperclass;
 public:
     explicit ClassCompiler(std::unique_ptr<ClassCompiler> enclosing);
     friend Parser;
@@ -130,6 +131,7 @@ class Parser {
     void string(bool canAssign);
     void namedVariable(const std::string& name, bool canAssign);
     void variable(bool canAssign);
+    void super_(bool canAssign);
     void this_(bool canAssign);
     void and_(bool canAssign);
     void unary(bool canAssign);

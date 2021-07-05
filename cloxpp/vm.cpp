@@ -351,6 +351,15 @@ InterpretResult VM::run() {
                 }
                 break;
             }
+            case OpCode::GET_SUPER: {
+                auto name = readString();
+                auto superclass = std::get<ClassValue>(pop());
+                
+                if (!bindMethod(superclass, name)) {
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
             case OpCode::EQUAL: {
                 popTwoAndPush(peek(0) == peek(1));
                 break;
@@ -439,6 +448,16 @@ InterpretResult VM::run() {
                 break;
             }
                 
+            case OpCode::SUPER_INVOKE: {
+                auto method = readString();
+                int argCount = readByte();
+                auto superclass = std::get<ClassValue>(pop());
+                if (!invokeFromClass(superclass, method, argCount)) {
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+                break;
+            }
+                
             case OpCode::CLOSURE: {
                 auto function = std::get<Function>(readConstant());
                 auto closure = std::make_shared<ClosureObject>(function);
@@ -480,6 +499,19 @@ InterpretResult VM::run() {
             case OpCode::CLASS:
                 push(std::make_shared<ClassObject>(readString()));
                 break;
+                
+            case OpCode::INHERIT: {
+                try {
+                    auto superclass = std::get<ClassValue>(peek(1));
+                    auto subclass = std::get<ClassValue>(peek(0));
+                    subclass->methods = superclass->methods;
+                    pop(); // Subclass.
+                    break;
+                } catch (std::bad_variant_access&) {
+                    runtimeError("Superclass must be a class.");
+                    return InterpretResult::RUNTIME_ERROR;
+                }
+            }
                 
             case OpCode::METHOD:
                 defineMethod(readString());

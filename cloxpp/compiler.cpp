@@ -109,7 +109,7 @@ bool Compiler::isLocal() {
 }
 
 ClassCompiler::ClassCompiler(std::unique_ptr<ClassCompiler> enclosing)
-    : enclosing(std::move(enclosing)) {};
+    : enclosing(std::move(enclosing)), hasSuperclass(false) {};
 
 Parser::Parser(const std::string& source) :
     previous(Token(TokenType::_EOF, source, 0)),
@@ -360,6 +360,22 @@ void Parser::variable(bool canAssign) {
     namedVariable(std::string(previous.text()), canAssign);
 }
 
+void Parser::super_(bool canAssign) {
+    if (classCompiler == nullptr) {
+        error("Can't use 'super' outside of a class.");
+    } else if (!classCompiler->hasSuperclass) {
+        error("Can't use 'super' in a class with no superclass.");
+    }
+    
+    consume(TokenType::DOT, "Expect '.' after 'super'.");
+    consume(TokenType::IDENTIFIER, "Expect superclass method name.");
+    auto name = identifierConstant(std::string(previous.text()));
+    
+    namedVariable("this", false);
+    namedVariable("super", false);
+    emit(OpCode::GET_SUPER, name);
+}
+
 void Parser::this_(bool canAssign) {
     if (classCompiler == nullptr) {
         error("Can't use 'this' outside of a class.");
@@ -403,6 +419,7 @@ ParseRule& Parser::getRule(TokenType type) {
     auto string = [this](bool canAssign) { this->string(canAssign); };
     auto literal = [this](bool canAssign) { this->literal(canAssign); };
     auto variable = [this](bool canAssign) { this->variable(canAssign); };
+    auto super_ = [this](bool canAssign) { this->super_(canAssign); };
     auto this_ = [this](bool canAssign) { this->this_(canAssign); };
     auto and_ = [this](bool canAssign) { this->and_(canAssign); };
     auto or_ = [this](bool canAssign) { this->or_(canAssign); };
@@ -441,7 +458,7 @@ ParseRule& Parser::getRule(TokenType type) {
         { nullptr,     or_,        Precedence::OR },         // TOKEN_OR
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_PRINT
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_RETURN
-        { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_SUPER
+        { super_,      nullptr,    Precedence::NONE },       // TOKEN_SUPER
         { this_,       nullptr,    Precedence::NONE },       // TOKEN_THIS
         { literal,     nullptr,    Precedence::NONE },       // TOKEN_TRUE
         { nullptr,     nullptr,    Precedence::NONE },       // TOKEN_VAR
@@ -575,6 +592,23 @@ void Parser::classDeclaration() {
     
     classCompiler = std::make_unique<ClassCompiler>(std::move(classCompiler));
     
+    if (match(TokenType::LESS)) {
+        consume(TokenType::IDENTIFIER, "Expect superclass name.");
+        variable(false);
+        
+        if (className == previous.text()) {
+            error("A class can't inherit from itself.");
+        }
+        
+        compiler->beginScope();
+        compiler->addLocal("super");
+        defineVariable(0);
+        
+        namedVariable(className, false);
+        emit(OpCode::INHERIT);
+        classCompiler->hasSuperclass = true;
+    }
+    
     namedVariable(className, false);
     consume(TokenType::LEFT_BRACE, "Expect '{' before class body.");
     while (!check(TokenType::RIGHT_BRACE) && !check(TokenType::_EOF)) {
@@ -582,6 +616,10 @@ void Parser::classDeclaration() {
     }
     consume(TokenType::RIGHT_BRACE, "Expect '}' after class body.");
     emit(OpCode::POP);
+    
+    if (classCompiler->hasSuperclass) {
+        compiler->endScope();
+    }
     
     classCompiler = std::move(classCompiler->enclosing);
 }
