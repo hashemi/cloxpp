@@ -30,7 +30,7 @@ Next I'll be working on refactoring the code and improving its performance.
 The test suite is from the reference C implementation. To run the tests:
 
 ```zsh
-dart tool/bin/test.dart chap29_superclasses --interpreter build/Release/cloxpp
+dart tool/bin/test.dart clox --interpreter build/Release/cloxpp
 ```
 
 The command specifies `build/Release/cloxpp` as the binary, which is where it ends up after running `xcodebuild` from the command line.
