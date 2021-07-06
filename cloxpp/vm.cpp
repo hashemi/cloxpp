@@ -175,7 +175,7 @@ void VM::runtimeError(const char* format, ...) {
     for (auto i = frames.size(); i-- > 0; ) {
         auto& frame = frames[i];
         auto function = frame.closure->function;
-        auto line = function->getChunk().getLine(frame.ip);
+        auto line = function->getChunk().getLine(frame.ip - 1);
         std::cerr << "[line " << line << "] in ";
         if (function->name.empty()) {
             std::cerr << "script" << std::endl;
