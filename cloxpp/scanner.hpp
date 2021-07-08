@@ -53,8 +53,8 @@ public:
 
 class Scanner {
     std::string source;
-    int start;
-    int current;
+    std::string::size_type start;
+    std::string::size_type current;
     int line;
     
     bool isAtEnd();

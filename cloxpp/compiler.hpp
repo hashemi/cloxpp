@@ -61,14 +61,16 @@ typedef enum {
 } FunctionType;
 
 class Compiler {
-    Function function;
+    Parser* parser;
+
     FunctionType type;
+    Function function;
+
     std::unique_ptr<Compiler> enclosing;
     
     std::vector<Local> locals;
     std::vector<Upvalue> upvalues;
     int scopeDepth = 0;
-    Parser* parser;
 
 public:
     explicit Compiler(Parser* parser, FunctionType type, std::unique_ptr<Compiler> enclosing);
@@ -94,8 +96,8 @@ public:
 };
 
 class Parser {
-    Token current;
     Token previous;
+    Token current;
     Scanner scanner;
     std::unique_ptr<Compiler> compiler;
     std::unique_ptr<ClassCompiler> classCompiler;

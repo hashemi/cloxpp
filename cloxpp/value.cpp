@@ -25,7 +25,7 @@ unsigned long Chunk::addConstant(Value value) {
 void Chunk::disassemble(const std::string& name) {
     std::cout << "== " << name << " ==" << std::endl;
     
-    for (int i = 0; i < code.size();) {
+    for (auto i = 0; i < static_cast<int>(code.size());) {
         i = disassembleInstruction(i);
     }
 }

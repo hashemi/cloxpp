@@ -73,9 +73,9 @@ int Compiler::resolveUpvalue(const std::string& name) {
 }
 
 int Compiler::addUpvalue(uint8_t index, bool isLocal) {
-    for (auto i = 0; i < upvalues.size(); i++) {
+    for (size_t i = 0; i < upvalues.size(); i++) {
         if (upvalues[i].index == index && upvalues[i].isLocal == isLocal) {
-            return i;
+            return static_cast<int>(i);
         }
     }
     
@@ -115,7 +115,8 @@ Parser::Parser(const std::string& source) :
     previous(Token(TokenType::_EOF, source, 0)),
     current(Token(TokenType::_EOF, source, 0)),
     scanner(Scanner(source)),
-    hadError(false), panicMode(false), classCompiler(nullptr)
+    classCompiler(nullptr),
+    hadError(false), panicMode(false)
 {
     compiler = std::make_unique<Compiler>(this, TYPE_SCRIPT, nullptr);
     advance();

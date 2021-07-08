@@ -227,7 +227,7 @@ InterpretResult VM::run() {
         return ((this->frames.back().closure->function->getCode(this->frames.back().ip - 2) << 8) | (this->frames.back().closure->function->getCode(this->frames.back().ip - 1)));
     };
     
-    auto readString = [this, readConstant]() -> const std::string& {
+    auto readString = [readConstant]() -> const std::string& {
         return std::get<std::string>(readConstant());
     };
     
@@ -462,7 +462,7 @@ InterpretResult VM::run() {
                 auto function = std::get<Function>(readConstant());
                 auto closure = std::make_shared<ClosureObject>(function);
                 push(closure);
-                for (int i = 0; i < closure->upvalues.size(); i++) {
+                for (int i = 0; i < static_cast<int>(closure->upvalues.size()); i++) {
                     auto isLocal = readByte();
                     auto index = readByte();
                     if (isLocal) {
