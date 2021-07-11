@@ -148,17 +148,11 @@ inline std::ostream& operator<<(std::ostream& os, const Value& v) {
 }
 
 struct FalsinessVisitor {
-    bool operator()(const double d) const { return false; }
     bool operator()(const bool b) const { return !b; }
     bool operator()(const std::monostate n) const { return true; }
-    bool operator()(const std::string& s) const { return false; }
-    bool operator()(const Function& f) const { return false; }
-    bool operator()(const NativeFunction& f) const { return false; }
-    bool operator()(const Closure& f) const { return false; }
-    bool operator()(const UpvalueValue& u) const { return false; }
-    bool operator()(const ClassValue& c) const { return false; }
-    bool operator()(const InstanceValue& i) const { return false; }
-    bool operator()(const BoundMethodValue& m) const { return false; }
+    
+    template <typename T>
+    bool operator()(const T& value) const { return false; }
 };
 
 inline bool isFalsy(const Value& v) {
