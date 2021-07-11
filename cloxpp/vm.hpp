@@ -32,6 +32,8 @@ static Value clockNative(int argCount, std::vector<Value>::iterator args) {
     return (double)clock() / CLOCKS_PER_SEC;
 }
 
+struct CallVisitor;
+
 class VM {
     // TODO: Switch to a fixed array to prevent pointer invalidation
     std::vector<Value> stack;
@@ -51,15 +53,15 @@ class VM {
     void defineNative(const std::string& name, NativeFn function);
     template <typename F>
     bool binaryOp(F op);
-    void popTwoAndPush(Value v);
+    void popTwoAndPush(const Value& v);
     
-    inline void push(Value v) { stack.push_back(v); }
+    inline void push(const Value& v) { stack.push_back(v); }
     inline Value pop() {
-        auto v = stack.back();
+        auto v = std::move(stack.back());
         stack.pop_back();
         return v;
     }
-    inline Value const& peek(int distance) { return stack[stack.size() - 1 - distance]; }
+    inline const Value& peek(int distance) { return stack[stack.size() - 1 - distance]; }
     bool callValue(const Value& callee, int argCount);
     bool invoke(const std::string& name, int argCount);
     bool invokeFromClass(ClassValue klass, const std::string& name, int argCount);
@@ -67,7 +69,7 @@ class VM {
     UpvalueValue captureUpvalue(Value* local);
     void closeUpvalues(Value* last);
     void defineMethod(const std::string& name);
-    bool call(Closure closure, int argCount);
+    bool call(const Closure& closure, int argCount);
     
 public:
     explicit VM() {
@@ -77,6 +79,8 @@ public:
     }
     InterpretResult interpret(const std::string& source);
     InterpretResult run();
+    
+    friend CallVisitor;
 };
 
 #endif /* vm_hpp */

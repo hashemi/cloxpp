@@ -11,39 +11,52 @@
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
-bool VM::callValue(const Value& callee, int argCount) {
-    return std::visit(overloaded {
-        [this, argCount](Closure closure) -> bool {
-            return call(closure, argCount);
-        },
-        [this, argCount](NativeFunction native) -> bool {
-            auto result = native->function(argCount, stack.end() - argCount);
-            stack.resize(stack.size() - argCount - 1);
-            stack.reserve(STACK_MAX);
-            push(result);
-            return true;
-        },
-        [this, argCount](ClassValue klass) -> bool {
-            stack[stack.size() - argCount - 1] = std::make_shared<InstanceObject>(klass);
-            auto found = klass->methods.find(initString);
-            if (found != klass->methods.end()) {
-                auto initializer = found->second;
-                return call(initializer, argCount);
-            } else if (argCount != 0) {
-                runtimeError("Expected 0 arguments but got %d.", argCount);
-                return false;
-            }
-            return true;
-        },
-        [this, argCount](BoundMethodValue bound) -> bool {
-            stack[stack.size() - argCount - 1] = bound->receiver;
-            return call(bound->method, argCount);
-        },
-        [this](auto v) -> bool {
-            this->runtimeError("Can only call functions and classes.");
+struct CallVisitor {
+    const int argCount;
+    VM& vm;
+    
+    CallVisitor(int argCount, VM& vm)
+        : argCount(argCount), vm(vm) {}
+    
+    bool operator()(const NativeFunction& native) const {
+        auto result = native->function(argCount, vm.stack.end() - argCount);
+        vm.stack.resize(vm.stack.size() - argCount - 1);
+        vm.stack.reserve(STACK_MAX);
+        vm.push(std::move(result));
+        return true;
+    }
+    
+    bool operator()(const Closure& closure) const {
+        return vm.call(closure, argCount);
+    }
+    
+    bool operator()(const ClassValue& klass) const {
+        vm.stack[vm.stack.size() - argCount - 1] = std::make_shared<InstanceObject>(klass);
+        auto found = klass->methods.find(vm.initString);
+        if (found != klass->methods.end()) {
+            auto initializer = found->second;
+            return vm.call(initializer, argCount);
+        } else if (argCount != 0) {
+            vm.runtimeError("Expected 0 arguments but got %d.", argCount);
             return false;
         }
-    }, callee);
+        return true;
+    }
+    
+    bool operator()(const BoundMethodValue& bound) const {
+        vm.stack[vm.stack.size() - argCount - 1] = bound->receiver;
+        return vm.call(bound->method, argCount);
+    }
+
+    template <typename T>
+    bool operator()(const T& value) const {
+        vm.runtimeError("Can only call functions and classes.");
+        return false;
+    }
+};
+
+bool VM::callValue(const Value& callee, int argCount) {
+    return std::visit(CallVisitor(argCount, *this), callee);
 }
 
 bool VM::invoke(const std::string& name, int argCount) {
@@ -117,7 +130,7 @@ UpvalueValue VM::captureUpvalue(Value* local) {
 
 void VM::closeUpvalues(Value* last) {
     while (openUpvalues != nullptr && openUpvalues->location >= last) {
-        auto upvalue = openUpvalues;
+        auto& upvalue = openUpvalues;
         upvalue->closed = *upvalue->location;
         upvalue->location = &upvalue->closed;
         openUpvalues = upvalue->next;
@@ -131,7 +144,7 @@ void VM::defineMethod(const std::string& name) {
     pop();
 }
 
-bool VM::call(Closure closure, int argCount) {
+bool VM::call(const Closure& closure, int argCount) {
     if (argCount != closure->function->arity) {
         runtimeError("Expected %d arguments but got %d.",
                      closure->function->arity, argCount);
@@ -207,7 +220,7 @@ bool VM::binaryOp(F op) {
     }
 }
 
-void VM::popTwoAndPush(Value v) {
+void VM::popTwoAndPush(const Value& v) {
     pop();
     pop();
     push(v);
