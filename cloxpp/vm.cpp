@@ -287,8 +287,7 @@ InterpretResult VM::run() {
                     runtimeError("Undefined variable '%s'.", name.c_str());
                     return InterpretResult::RUNTIME_ERROR;
                 }
-                auto value = found->second;
-                push(value);
+                push(found->second);
                 break;
             }
                 
